@@ -6,9 +6,12 @@ const nextConfig = {
   },
   typescript: {
     ignoreBuildErrors: true,
-  },
+ },
   images: {
     unoptimized: true,
+  },
+  experimental: {
+    serverComponentsExternalPackages: ["sharp", "onnxruntime-node"],
   },
 }
 

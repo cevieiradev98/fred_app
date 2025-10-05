@@ -69,6 +69,32 @@ docker-compose ps
 docker-compose logs -f
 ```
 
+### 4. Solução de problemas comuns no build
+
+Se você encontrar um erro como "Module not found: Can't resolve 'lib/utils'" durante o build do frontend, siga estas etapas:
+
+```bash
+# 1. Verifique se os arquivos existem localmente
+ls -la fred_app_frontend/lib/
+ls -la fred_app_frontend/lib/utils.ts
+
+# 2. Atualize o repositório para garantir todos os arquivos
+git pull origin main
+
+# 3. Tente build com mais memória (se disponível)
+docker-compose build --memory=4g
+
+# 4. Se ainda houver problemas, faça build individual do backend primeiro
+docker-compose build backend
+docker-compose build frontend
+
+# 5. Verifique os arquivos copiados no build
+docker run --rm -it --entrypoint ls $(docker images -q -f reference='*fred_app_frontend*') /app/lib/
+
+# 6. Se o build continuar falhando, verifique o log detalhado
+docker-compose build frontend --no-cache --progress=plain
+```
+
 ### 4. Testar a aplicação
 ```bash
 # Backend (deve retornar JSON)
