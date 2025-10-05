@@ -26,12 +26,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Include routers with /api prefix
-app.include_router(pets.router, prefix="/api", tags=["pets"])
-app.include_router(routine_templates.router, prefix="/api", tags=["routine-templates"])
-app.include_router(routine_items.router, prefix="/api", tags=["routine-items"])
-app.include_router(glucose_readings.router, prefix="/api", tags=["glucose-readings"])
-app.include_router(mood_entries.router, prefix="/api", tags=["mood-entries"])
+# Include routers (nginx já adiciona o prefixo /api no proxy)
+app.include_router(pets.router, tags=["pets"])
+app.include_router(routine_templates.router, tags=["routine-templates"])
+app.include_router(routine_items.router, tags=["routine-items"])
+app.include_router(glucose_readings.router, tags=["glucose-readings"])
+app.include_router(mood_entries.router, tags=["mood-entries"])
 
 
 @app.exception_handler(HTTPException)
