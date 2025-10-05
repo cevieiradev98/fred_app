@@ -93,9 +93,15 @@ docker run --rm -it --entrypoint ls $(docker images -q -f reference='*fred_app_f
 
 # 6. Se o build continuar falhando, verifique o log detalhado
 docker-compose build frontend --no-cache --progress=plain
+
+# 7. Problema específico com caminhos absolutos no Next.js
+# Se encontrar erro como "Can't resolve ''lib/utils''" (com aspas duplas extras):
+# Isso pode ser um problema de resolução de caminhos no ambiente de build do Docker
+# Verifique que o arquivo lib/utils.ts existe e tem as importações corretas
+cat fred_app_frontend/lib/utils.ts
 ```
 
-### 4. Testar a aplicação
+### 5. Testar a aplicação
 ```bash
 # Backend (deve retornar JSON)
 curl http://localhost:8000/docs
@@ -258,7 +264,7 @@ docker-compose up -d
 ```bash
 # Ver o que está usando a porta 80/8000/3000
 sudo lsof -i :80
-sudo lsof -i :8000
+sudo lsof -i :800
 sudo lsof -i :3000
 
 # Parar processo (se necessário)
@@ -333,7 +339,7 @@ docker-compose up -d
 crontab -e
 
 # Adicionar linha para backup diário às 2h
-0 2 * * * cd /home/$USER/fred_app && docker-compose exec -T backend cp /app/fred_app.db /app/data/backup-$(date +\%Y\%m\%d).db
+0 2 * * cd /home/$USER/fred_app && docker-compose exec -T backend cp /app/fred_app.db /app/data/backup-$(date +\%Y\%m\%d).db
 ```
 
 ## 📞 Suporte
@@ -363,6 +369,6 @@ VPS (seu-dominio.com)
 ├── Nginx (porta 80/443) → Proxy Reverso
 │   ├── /api/* → Backend (FastAPI)
 │   └── /* → Frontend (Next.js)
-├── Backend Container (porta 8000)
-├── Frontend Container (porta 3000)
+├── Backend Container (porta 800)
+├── Frontend Container (porta 300)
 └── Certbot (renovação SSL automática)

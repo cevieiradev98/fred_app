@@ -20,6 +20,7 @@ COPY . .
 # Set environment variables for build
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_OPTIONS="--max-old-space-size=4096"
+ENV NEXT_PUBLIC_API_URL="http://localhost:8000"
 
 # Build the application
 RUN pnpm run build
@@ -41,9 +42,9 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
 USER nextjs
 
-EXPOSE 300
+EXPOSE 3000
 
 ENV PORT=3000
-ENV HOSTNAME="0.0.0.0"
+ENV HOSTNAME="0.0.0"
 
 CMD ["node", "server.js"]
