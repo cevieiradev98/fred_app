@@ -5,6 +5,7 @@ from datetime import datetime, date
 import uuid
 
 from app import models, schemas
+from app.utils import now_brasilia, to_brasilia
 
 
 # Pet CRUD operations
@@ -168,7 +169,9 @@ def update_routine_item(db: Session, routine_item_id: str, routine_item_update: 
         db_routine_item.completed = routine_item_update.completed
         if routine_item_update.completed_at is not None:
             if routine_item_update.completed_at:
-                db_routine_item.completed_at = datetime.fromisoformat(routine_item_update.completed_at.replace('Z', '+00:00'))
+                # Parse the datetime and convert to Brasília timezone
+                dt = datetime.fromisoformat(routine_item_update.completed_at.replace('Z', '+00:00'))
+                db_routine_item.completed_at = to_brasilia(dt)
             else:
                 db_routine_item.completed_at = None
         db.commit()

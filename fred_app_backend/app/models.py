@@ -2,6 +2,7 @@ from sqlalchemy import Column, Integer, String, Boolean, DateTime, Text, Foreign
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.database import Base
+from app.utils import now_brasilia
 
 
 class Pet(Base):
@@ -11,8 +12,8 @@ class Pet(Base):
     name = Column(String, nullable=False)
     breed = Column(String, nullable=True)
     age = Column(Integer, nullable=True)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+    created_at = Column(DateTime(timezone=True), default=now_brasilia)
+    updated_at = Column(DateTime(timezone=True), onupdate=now_brasilia)
 
     # Relationships
     routine_templates = relationship("RoutineTemplate", back_populates="pet")
@@ -29,7 +30,7 @@ class RoutineTemplate(Base):
     period = Column(String, nullable=False)  # morning, afternoon, evening
     task = Column(String, nullable=False)
     is_active = Column(Boolean, default=True)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    created_at = Column(DateTime(timezone=True), default=now_brasilia)
 
     # Relationship
     pet = relationship("Pet", back_populates="routine_templates")
@@ -47,7 +48,7 @@ class RoutineItem(Base):
     completed = Column(Boolean, default=False)
     completed_at = Column(DateTime(timezone=True), nullable=True)
     date = Column(String, nullable=False)  # YYYY-MM-DD format
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    created_at = Column(DateTime(timezone=True), default=now_brasilia)
 
     # Relationships
     pet = relationship("Pet", back_populates="routine_items")
@@ -64,7 +65,7 @@ class GlucoseReading(Base):
     protocol = Column(String, nullable=True)
     notes = Column(Text, nullable=True)
     date = Column(String, nullable=False)  # YYYY-MM-DD format
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    created_at = Column(DateTime(timezone=True), default=now_brasilia)
 
     # Relationship
     pet = relationship("Pet", back_populates="glucose_readings")
@@ -81,7 +82,7 @@ class MoodEntry(Base):
     walk = Column(String, nullable=False)  # longo, curto, nao-passeou
     notes = Column(Text, nullable=True)
     date = Column(String, nullable=False)  # YYYY-MM-DD format
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    created_at = Column(DateTime(timezone=True), default=now_brasilia)
 
     # Relationship
     pet = relationship("Pet", back_populates="mood_entries")
