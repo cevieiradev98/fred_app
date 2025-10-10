@@ -636,7 +636,7 @@ export default function FredCareApp() {
       <header className="fixed top-0 left-0 right-0 bg-white border-b border-border z-40 safe-area-inset-top">
         <div className="flex items-center gap-3 p-4">
           <Avatar className="h-10 w-10">
-            <AvatarImage src="/golden-retriever.png" alt="Fred" />
+            <AvatarImage src="/fred.jpg" alt="Fred" />
             <AvatarFallback>🐕</AvatarFallback>
           </Avatar>
           <div className="flex-1">
