@@ -32,6 +32,12 @@ interface HumorRecord {
   timestamp: Date
 }
 
+const TIME_OF_DAY_LABELS: Record<string, string> = {
+  morning: "Manhã",
+  afternoon: "Tarde",
+  evening: "Noite",
+}
+
 export default function FredCareApp() {
   const {
     routineItems,
@@ -375,7 +381,9 @@ export default function FredCareApp() {
                     </p>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm capitalize">{reading.time_of_day}</p>
+                    <p className="text-sm">
+                      {TIME_OF_DAY_LABELS[reading.time_of_day] ?? reading.time_of_day}
+                    </p>
                   </div>
                 </div>
                 {reading.protocol && <p className="text-sm mt-2 p-2 bg-muted rounded">{reading.protocol}</p>}
@@ -582,7 +590,9 @@ export default function FredCareApp() {
                     {entry.type === "glicemia" && (
                       <div>
                         <p className="font-medium">Glicemia: {(entry as any).value} mg/dL</p>
-                        <p className="text-sm text-muted-foreground capitalize">{(entry as any).time_of_day}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {TIME_OF_DAY_LABELS[(entry as any).time_of_day] ?? (entry as any).time_of_day}
+                        </p>
                         {(entry as any).protocol && (
                           <p className="text-xs mt-1 p-2 bg-muted rounded">{(entry as any).protocol}</p>
                         )}
