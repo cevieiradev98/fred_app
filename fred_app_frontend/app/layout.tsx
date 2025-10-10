@@ -18,10 +18,10 @@ export const metadata: Metadata = {
     telephone: false,
   },
   icons: {
-    icon: "/icon-192x192.jpg",
-    apple: "/icon-192x192.jpg",
+    icon: "/icon-192x192.png",
+    apple: "/icon-192x192.png",
   },
-    generator: 'v0.app'
+  generator: "v0.app",
 }
 
 export const viewport: Viewport = {
@@ -44,7 +44,8 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="apple-mobile-web-app-title" content="Fred Care" />
-        <link rel="apple-touch-icon" href="/icon-192x192.jpg" />
+        <link rel="icon" href="/favicon.ico" />
+        <link rel="apple-touch-icon" href="/icon-192x192.png" />
       </head>
       <body className={inter.className}>{children}</body>
     </html>
