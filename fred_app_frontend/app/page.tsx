@@ -18,6 +18,9 @@ import {
   Trash2,
   History,
   ListChecks,
+  Gauge,
+  TrendingDown,
+  TrendingUp,
 } from "lucide-react"
 import { usePetData } from "@/hooks/use-pet-data"
 import { RoutineItem } from "@/types"
@@ -335,6 +338,39 @@ export default function FredCareApp() {
   }
 
   const GlicemiaPage = () => {
+    const monthAgo = new Date()
+    monthAgo.setMonth(monthAgo.getMonth() - 1)
+
+    const readingsLastMonth = glucoseReadings.filter((reading) => {
+      const readingDate = new Date(reading.created_at)
+      if (Number.isNaN(readingDate.getTime())) return false
+      return readingDate >= monthAgo
+    })
+
+    const lastReading = glucoseReadings[0] ?? null
+    const minReadingEntry = readingsLastMonth.length
+      ? readingsLastMonth.reduce((min, reading) => (reading.value < min.value ? reading : min), readingsLastMonth[0])
+      : null
+    const maxReadingEntry = readingsLastMonth.length
+      ? readingsLastMonth.reduce((max, reading) => (reading.value > max.value ? reading : max), readingsLastMonth[0])
+      : null
+    const averageReading =
+      readingsLastMonth.length > 0
+        ? readingsLastMonth.reduce((total, reading) => total + reading.value, 0) / readingsLastMonth.length
+        : null
+
+    const formatDateTime = (value?: string) => {
+      if (!value) return null
+      const parsed = new Date(value)
+      if (Number.isNaN(parsed.getTime())) return null
+      return parsed.toLocaleString("pt-BR", {
+        day: "2-digit",
+        month: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+      })
+    }
+
     const chartData = glucoseReadings
       .slice(0, 10)
       .reverse()
@@ -346,6 +382,82 @@ export default function FredCareApp() {
 
     return (
       <div className="space-y-6 pb-20">
+        <div className="grid grid-cols-2 gap-3">
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between text-xs font-medium text-muted-foreground">
+                <span>Última leitura</span>
+                <Clock className="h-4 w-4" />
+              </div>
+              <div className="mt-2">
+                <p className="text-2xl font-bold">
+                  {lastReading ? `${lastReading.value} mg/dL` : "--"}
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {lastReading ? formatDateTime(lastReading.created_at) ?? "Sem data" : "Sem registros"}
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between text-xs font-medium text-muted-foreground">
+                <span>Menor (30 dias)</span>
+                <TrendingDown className="h-4 w-4" />
+              </div>
+              <div className="mt-2">
+                <p className="text-2xl font-bold">
+                  {minReadingEntry ? `${minReadingEntry.value} mg/dL` : "--"}
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {minReadingEntry
+                    ? formatDateTime(minReadingEntry.created_at) ?? "Sem data"
+                    : "Sem registros no período"}
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between text-xs font-medium text-muted-foreground">
+                <span>Maior (30 dias)</span>
+                <TrendingUp className="h-4 w-4" />
+              </div>
+              <div className="mt-2">
+                <p className="text-2xl font-bold">
+                  {maxReadingEntry ? `${maxReadingEntry.value} mg/dL` : "--"}
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {maxReadingEntry
+                    ? formatDateTime(maxReadingEntry.created_at) ?? "Sem data"
+                    : "Sem registros no período"}
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between text-xs font-medium text-muted-foreground">
+                <span>Média (30 dias)</span>
+                <Gauge className="h-4 w-4" />
+              </div>
+              <div className="mt-2">
+                <p className="text-2xl font-bold">
+                  {averageReading !== null ? `${averageReading.toFixed(1)} mg/dL` : "--"}
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {averageReading !== null
+                    ? `Considerando ${readingsLastMonth.length} registros`
+                    : "Sem registros no período"}
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
         <GlucoseRegistrationCard />
 
         {chartData.length > 0 && (
