@@ -1,5 +1,5 @@
 const CACHE_NAME = "fred-care-v2"
-const urlsToCache = ["/", "/manifest.json", "/icon-192x192.png", "/icon-512x512.png", "/favicon.ico", "/fred.jpg"]
+const urlsToCache = ["/", "/manifest.json", "/logo.png", "/icon-192x192.png", "/icon-512x512.png", "/favicon.ico", "/fred.jpg"]
 
 // Install event
 self.addEventListener("install", (event) => {

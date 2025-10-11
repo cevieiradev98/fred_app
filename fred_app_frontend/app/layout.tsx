@@ -18,8 +18,8 @@ export const metadata: Metadata = {
     telephone: false,
   },
   icons: {
-    icon: "/icon-192x192.png",
-    apple: "/icon-192x192.png",
+    icon: "/logo.png",
+    apple: "/logo.png",
   },
   generator: "v0.app",
 }
@@ -45,7 +45,8 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="apple-mobile-web-app-title" content="Fred Care" />
         <link rel="icon" href="/favicon.ico" />
-        <link rel="apple-touch-icon" href="/icon-192x192.png" />
+        <link rel="apple-touch-icon" href="/logo.png" />
+        <link rel="apple-touch-startup-image" href="/logo.png" />
       </head>
       <body className={inter.className}>{children}</body>
     </html>
