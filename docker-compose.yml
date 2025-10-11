@@ -17,7 +17,7 @@ services:
       - DB_PASSWORD=${DB_PASSWORD:-fred_secret}
       - DATABASE_URL=${DATABASE_URL:-}
       - SECRET_KEY=${SECRET_KEY:-your-secret-key-here}
-      - DEBUG=False
+      - DEBUG=True
     depends_on:
       postgres:
         condition: service_healthy
