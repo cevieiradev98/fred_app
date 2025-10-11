@@ -53,7 +53,7 @@ export default function FredCareApp() {
     refreshData,
   } = usePetData()
 
-  const [currentTab, setCurrentTab] = useState<"dashboard" | "glicemia" | "humor" | "historico">("dashboard")
+  const [currentTab, setCurrentTab] = useState<"dashboard" | "glicemia" | "humor" | "historico">("glicemia")
   const [isEditingRoutine, setIsEditingRoutine] = useState(false)
   const [newTaskTime, setNewTaskTime] = useState("")
   const [newTaskDescription, setNewTaskDescription] = useState("")
