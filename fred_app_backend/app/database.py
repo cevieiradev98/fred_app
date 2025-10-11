@@ -1,7 +1,27 @@
+import logging
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from app.config import settings
+
+logger = logging.getLogger("fred_app.database")
+logger.setLevel(logging.INFO)
+
+
+def log_connection_info():
+    logger.info(
+        "Connecting to database",
+        extra={
+            "db_host": settings.db_host,
+            "db_port": settings.db_port,
+            "db_name": settings.db_name,
+            "db_user": settings.db_user,
+            "database_url": settings.database_url,
+        },
+    )
+
+
+log_connection_info()
 
 engine = create_engine(settings.database_url, pool_pre_ping=True)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
