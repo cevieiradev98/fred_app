@@ -127,48 +127,21 @@ export default function FredCareApp() {
   const completedTasks = routineItems.filter((task) => task.completed).length
   const progressPercentage = routineItems.length > 0 ? (completedTasks / routineItems.length) * 100 : 0
 
-  const renderDashboard = () => {
+  const RoutineSection = () => {
     const periodNames = {
       morning: "Manhã",
       afternoon: "Tarde",
       evening: "Noite",
     }
 
-    const groupedTasks = routineItems.reduce(
-      (acc, task) => {
-        if (!acc[task.period]) acc[task.period] = []
-        acc[task.period].push(task)
-        return acc
-      },
-      {} as Record<string, RoutineItem[]>,
-    )
+    const groupedTasks = routineItems.reduce((acc, task) => {
+      if (!acc[task.period]) acc[task.period] = []
+      acc[task.period].push(task)
+      return acc
+    }, {} as Record<string, RoutineItem[]>)
 
     return (
-      <div className="space-y-6 pb-20">
-        <Card>
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-lg">Progresso do Dia</CardTitle>
-              <Button variant="outline" size="sm" onClick={resetDay} className="h-8 px-3 text-xs bg-transparent">
-                <RotateCcw className="h-3 w-3 mr-1" />
-                Reset
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center gap-3">
-              <Progress value={progressPercentage} className="flex-1 h-2" />
-              <span className="text-sm font-medium text-muted-foreground">
-                {completedTasks}/{routineItems.length}
-              </span>
-            </div>
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <CheckCircle2 className="h-4 w-4" />
-              <span>{Math.round(progressPercentage)}% concluído</span>
-            </div>
-          </CardContent>
-        </Card>
-
+      <>
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold">Rotina Diária</h2>
           <Button
@@ -262,6 +235,38 @@ export default function FredCareApp() {
             </CardContent>
           </Card>
         ))}
+      </>
+    )
+  }
+
+  const renderDashboard = () => {
+    return (
+      <div className="space-y-6 pb-20">
+        <Card>
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-lg">Progresso do Dia</CardTitle>
+              <Button variant="outline" size="sm" onClick={resetDay} className="h-8 px-3 text-xs bg-transparent">
+                <RotateCcw className="h-3 w-3 mr-1" />
+                Reset
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center gap-3">
+              <Progress value={progressPercentage} className="flex-1 h-2" />
+              <span className="text-sm font-medium text-muted-foreground">
+                {completedTasks}/{routineItems.length}
+              </span>
+            </div>
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <CheckCircle2 className="h-4 w-4" />
+              <span>{Math.round(progressPercentage)}% concluído</span>
+            </div>
+          </CardContent>
+        </Card>
+
+        <RoutineSection />
       </div>
     )
   }
@@ -410,8 +415,8 @@ export default function FredCareApp() {
   const HomePage = () => {
     return (
       <div className="space-y-6 pb-20">
-        {renderDashboard()}
         <GlucoseRegistrationCard />
+        <RoutineSection />
       </div>
     )
   }
