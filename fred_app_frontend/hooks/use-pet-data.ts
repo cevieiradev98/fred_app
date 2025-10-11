@@ -172,7 +172,7 @@ export function usePetData() {
         completed,
         completed_at: completed ? new Date().toISOString() : null,
       })
-      await loadRoutineItems()
+      await Promise.all([loadRoutineItems(), loadAllRoutineItems()])
     } catch (error) {
       console.error("Error updating routine item:", error)
     }
@@ -186,7 +186,7 @@ export function usePetData() {
       await loadRoutineTemplates()
       // Recreate today's tasks from updated templates
       await ensureDailyTasks()
-      await loadRoutineItems()
+      await Promise.all([loadRoutineItems(), loadAllRoutineItems()])
     } catch (error) {
       console.error("Error adding routine item:", error)
     }
@@ -205,7 +205,7 @@ export function usePetData() {
       
       // Also delete the current instance
       await routineService.deleteRoutineItem(id)
-      await loadRoutineItems()
+      await Promise.all([loadRoutineItems(), loadAllRoutineItems()])
     } catch (error) {
       console.error("Error deleting routine item:", error)
     }
@@ -219,7 +219,7 @@ export function usePetData() {
       await loadRoutineTemplates()
       // Recreate today's tasks
       await ensureDailyTasks()
-      await loadRoutineItems()
+      await Promise.all([loadRoutineItems(), loadAllRoutineItems()])
     } catch (error) {
       console.error("Error adding routine template:", error)
     }
@@ -229,6 +229,8 @@ export function usePetData() {
     try {
       await routineTemplateService.updateRoutineTemplate(templateId, updates)
       await loadRoutineTemplates()
+      await ensureDailyTasks()
+      await Promise.all([loadRoutineItems(), loadAllRoutineItems()])
     } catch (error) {
       console.error("Error updating routine template:", error)
     }
@@ -238,6 +240,8 @@ export function usePetData() {
     try {
       await routineTemplateService.deleteRoutineTemplate(templateId)
       await loadRoutineTemplates()
+      await ensureDailyTasks()
+      await Promise.all([loadRoutineItems(), loadAllRoutineItems()])
     } catch (error) {
       console.error("Error deleting routine template:", error)
     }

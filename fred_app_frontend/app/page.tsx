@@ -382,6 +382,8 @@ export default function FredCareApp() {
 
     return (
       <div className="space-y-6 pb-20">
+        <GlucoseRegistrationCard />
+
         <div className="grid grid-cols-2 gap-3">
           <Card>
             <CardContent className="p-4">
@@ -457,8 +459,6 @@ export default function FredCareApp() {
             </CardContent>
           </Card>
         </div>
-
-        <GlucoseRegistrationCard />
 
         {chartData.length > 0 && (
           <Card>
