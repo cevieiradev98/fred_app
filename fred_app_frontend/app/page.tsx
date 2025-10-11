@@ -6,7 +6,19 @@ import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Progress } from "@/components/ui/progress"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Clock, CheckCircle2, RotateCcw, Home, Droplets, Brain, Edit3, Plus, Trash2, History } from "lucide-react"
+import {
+  Clock,
+  CheckCircle2,
+  RotateCcw,
+  Home,
+  Droplets,
+  Brain,
+  Edit3,
+  Plus,
+  Trash2,
+  History,
+  ListChecks,
+} from "lucide-react"
 import { usePetData } from "@/hooks/use-pet-data"
 import { RoutineItem } from "@/types"
 import { PWAInstall } from "@/components/pwa-install"
@@ -53,7 +65,7 @@ export default function FredCareApp() {
     refreshData,
   } = usePetData()
 
-  const [currentTab, setCurrentTab] = useState<"dashboard" | "glicemia" | "humor" | "historico">("glicemia")
+  const [currentTab, setCurrentTab] = useState<"inicio" | "dashboard" | "glicemia" | "humor" | "historico">("inicio")
   const [isEditingRoutine, setIsEditingRoutine] = useState(false)
   const [newTaskTime, setNewTaskTime] = useState("")
   const [newTaskDescription, setNewTaskDescription] = useState("")
@@ -254,8 +266,7 @@ export default function FredCareApp() {
     )
   }
 
-  const GlicemiaPage = () => {
-    const { glucoseReadings, addGlucoseReading } = usePetData()
+  const GlucoseRegistrationCard = () => {
     const [newValue, setNewValue] = useState("")
     const [timeOfDay, setTimeOfDay] = useState("morning")
 
@@ -267,20 +278,15 @@ export default function FredCareApp() {
       }
 
       let protocol = ""
-      let color = ""
 
       if (value < 80) {
         protocol = "⚠️ HIPOGLICEMIA - Dar mel ou açúcar imediatamente"
-        color = "text-red-600"
       } else if (value <= 150) {
         protocol = "✅ Normal - Continuar rotina"
-        color = "text-green-600"
       } else if (value <= 250) {
         protocol = "⚠️ Alto - Verificar alimentação e insulina"
-        color = "text-yellow-600"
       } else {
         protocol = "🚨 MUITO ALTO - Contatar veterinário"
-        color = "text-red-600"
       }
 
       await addGlucoseReading(value, timeOfDay, protocol)
@@ -288,6 +294,42 @@ export default function FredCareApp() {
       toast.success("Glicemia registrada!")
     }
 
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Registrar Glicemia</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-2 gap-3">
+            <input
+              type="number"
+              value={newValue}
+              onChange={(e) => setNewValue(e.target.value)}
+              placeholder="mg/dL"
+              className="px-3 py-2 border rounded-md text-sm"
+              min="50"
+              max="500"
+            />
+            <select
+              value={timeOfDay}
+              onChange={(e) => setTimeOfDay(e.target.value)}
+              className="px-3 py-2 border rounded-md text-sm"
+            >
+              <option value="morning">Manhã</option>
+              <option value="afternoon">Tarde</option>
+              <option value="evening">Noite</option>
+            </select>
+          </div>
+          <Button onClick={handleAddReading} className="w-full">
+            <Droplets className="h-4 w-4 mr-2" />
+            Registrar
+          </Button>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  const GlicemiaPage = () => {
     const chartData = glucoseReadings
       .slice(0, 10)
       .reverse()
@@ -299,37 +341,7 @@ export default function FredCareApp() {
 
     return (
       <div className="space-y-6 pb-20">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Registrar Glicemia</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-3">
-              <input
-                type="number"
-                value={newValue}
-                onChange={(e) => setNewValue(e.target.value)}
-                placeholder="mg/dL"
-                className="px-3 py-2 border rounded-md text-sm"
-                min="50"
-                max="500"
-              />
-              <select
-                value={timeOfDay}
-                onChange={(e) => setTimeOfDay(e.target.value)}
-                className="px-3 py-2 border rounded-md text-sm"
-              >
-                <option value="morning">Manhã</option>
-                <option value="afternoon">Tarde</option>
-                <option value="evening">Noite</option>
-              </select>
-            </div>
-            <Button onClick={handleAddReading} className="w-full">
-              <Droplets className="h-4 w-4 mr-2" />
-              Registrar
-            </Button>
-          </CardContent>
-        </Card>
+        <GlucoseRegistrationCard />
 
         {chartData.length > 0 && (
           <Card>
@@ -391,6 +403,15 @@ export default function FredCareApp() {
             </Card>
           ))}
         </div>
+      </div>
+    )
+  }
+
+  const HomePage = () => {
+    return (
+      <div className="space-y-6 pb-20">
+        {renderDashboard()}
+        <GlucoseRegistrationCard />
       </div>
     )
   }
@@ -659,6 +680,7 @@ export default function FredCareApp() {
       </header>
 
       <main className="pt-20 px-4">
+        {currentTab === "inicio" && <HomePage />}
         {currentTab === "dashboard" && renderDashboard()}
         {currentTab === "glicemia" && <GlicemiaPage />}
         {currentTab === "humor" && <HumorPage />}
@@ -668,13 +690,24 @@ export default function FredCareApp() {
       <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-border z-40 safe-area-inset-bottom">
         <div className="flex">
           <button
+            onClick={() => setCurrentTab("inicio")}
+            className={`flex-1 py-3 px-2 text-xs font-medium transition-colors active:scale-95 ${
+              currentTab === "inicio" ? "text-blue-600 bg-blue-50" : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <div className="flex flex-col items-center gap-1">
+              <Home className="h-5 w-5" />
+              <span>Início</span>
+            </div>
+          </button>
+          <button
             onClick={() => setCurrentTab("dashboard")}
             className={`flex-1 py-3 px-2 text-xs font-medium transition-colors active:scale-95 ${
               currentTab === "dashboard" ? "text-blue-600 bg-blue-50" : "text-muted-foreground hover:text-foreground"
             }`}
           >
             <div className="flex flex-col items-center gap-1">
-              <Home className="h-5 w-5" />
+              <ListChecks className="h-5 w-5" />
               <span>Rotina</span>
             </div>
           </button>
