@@ -7,6 +7,14 @@ from app.config import settings
 logger = logging.getLogger("fred_app.database")
 logger.setLevel(logging.INFO)
 
+if not logger.handlers:
+    handler = logging.StreamHandler()
+    formatter = logging.Formatter(
+        "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    )
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
+
 
 def log_connection_info():
     logger.info(
