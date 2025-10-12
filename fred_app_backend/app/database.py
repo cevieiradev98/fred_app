@@ -27,6 +27,12 @@ def log_connection_info():
             "database_url": settings.database_url,
         },
     )
+    print(
+        "[Database] Connecting with settings -> "
+        f"host={settings.db_host} port={settings.db_port} "
+        f"name={settings.db_name} user={settings.db_user} "
+        f"url={settings.database_url}"
+    )
 
 
 log_connection_info()
