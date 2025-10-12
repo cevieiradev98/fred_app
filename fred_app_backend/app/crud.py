@@ -89,21 +89,25 @@ def ensure_daily_tasks(db: Session, pet_id: str, target_date: str):
     Ensure that routine items exist for the given date.
     If they don't exist, create them from active templates.
     """
-    # Check if tasks already exist for this date
     existing_tasks = db.query(models.RoutineItem).filter(
         models.RoutineItem.pet_id == pet_id,
         models.RoutineItem.date == target_date
     ).all()
-    
-    if existing_tasks:
-        return existing_tasks
-    
+
     # Get active templates
     templates = get_routine_templates(db, pet_id, active_only=True)
-    
-    # Create routine items from templates
+
+    # Track which templates already have items for this date
+    existing_template_ids = {
+        task.template_id for task in existing_tasks if task.template_id is not None
+    }
+
+    # Create routine items from templates that are missing
     created_items = []
     for template in templates:
+        if template.id in existing_template_ids:
+            continue
+
         db_routine_item = models.RoutineItem(
             id=str(uuid.uuid4()),
             pet_id=pet_id,
@@ -115,13 +119,13 @@ def ensure_daily_tasks(db: Session, pet_id: str, target_date: str):
         )
         db.add(db_routine_item)
         created_items.append(db_routine_item)
-    
+
     if created_items:
         db.commit()
         for item in created_items:
             db.refresh(item)
-    
-    return created_items
+
+    return existing_tasks + created_items
 
 
 # Routine Item CRUD operations

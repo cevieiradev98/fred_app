@@ -130,7 +130,7 @@ export default function FredCareApp() {
   const completedTasks = routineItems.filter((task) => task.completed).length
   const progressPercentage = routineItems.length > 0 ? (completedTasks / routineItems.length) * 100 : 0
 
-  const RoutineSection = () => {
+  const renderRoutineSection = () => {
     const periodNames = {
       morning: "Manhã",
       afternoon: "Tarde",
@@ -269,7 +269,7 @@ export default function FredCareApp() {
           </CardContent>
         </Card>
 
-        <RoutineSection />
+        {renderRoutineSection()}
       </div>
     )
   }
@@ -528,7 +528,7 @@ export default function FredCareApp() {
     return (
       <div className="space-y-6 pb-20">
         <GlucoseRegistrationCard />
-        <RoutineSection />
+        {renderRoutineSection()}
       </div>
     )
   }
