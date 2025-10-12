@@ -10,17 +10,24 @@ services:
     #   - "8000:8000"
     environment:
       - TZ=America/Sao_Paulo
+      # Supabase configuration
+      - SUPABASE_URL=${SUPABASE_URL:-}
+      - SUPABASE_KEY=${SUPABASE_KEY:-}
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY:-}
+      - DATABASE_URL=${DATABASE_URL:-}
+      # Legacy Postgres settings (for local development fallback)
       - DB_HOST=${DB_HOST:-postgres}
       - DB_PORT=${DB_PORT:-5432}
       - DB_NAME=${DB_NAME:-fred_app}
       - DB_USER=${DB_USER:-fred_app}
       - DB_PASSWORD=${DB_PASSWORD:-fred_secret}
-      - DATABASE_URL=${DATABASE_URL:-}
+      # App settings
       - SECRET_KEY=${SECRET_KEY:-your-secret-key-here}
       - DEBUG=True
-    depends_on:
-      postgres:
-        condition: service_healthy
+    # Commented out postgres dependency - use this for local development only
+    # depends_on:
+    #   postgres:
+    #     condition: service_healthy
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/docs"]
@@ -60,26 +67,28 @@ services:
     networks:
       - fred-app-net
 
-  postgres:
-    image: postgres:16-alpine
-    container_name: fred_app_postgres
-    environment:
-      - POSTGRES_DB=${DB_NAME:-fred_app}
-      - POSTGRES_USER=${DB_USER:-fred_app}
-      - POSTGRES_PASSWORD=${DB_PASSWORD:-fred_secret}
-      - TZ=America/Sao_Paulo
-    ports:
-      - "5432:5432"
-    volumes:
-      - ./data/postgres:/var/lib/postgresql/data
-    restart: unless-stopped
-    networks:
-      - fred-app-net
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-fred_app}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+  # Postgres local - DESABILITADO: usando Supabase agora
+  # Descomente este serviço se precisar desenvolver localmente sem Supabase
+  # postgres:
+  #   image: postgres:16-alpine
+  #   container_name: fred_app_postgres
+  #   environment:
+  #     - POSTGRES_DB=${DB_NAME:-fred_app}
+  #     - POSTGRES_USER=${DB_USER:-fred_app}
+  #     - POSTGRES_PASSWORD=${DB_PASSWORD:-fred_secret}
+  #     - TZ=America/Sao_Paulo
+  #   ports:
+  #     - "5432:5432"
+  #   volumes:
+  #     - ./data/postgres:/var/lib/postgresql/data
+  #   restart: unless-stopped
+  #   networks:
+  #     - fred-app-net
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-fred_app}"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
 
   # SUBSTITUI O NGINX E O CERTBOT
   proxy-manager:
