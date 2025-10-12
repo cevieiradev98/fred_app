@@ -27,28 +27,35 @@ Este guia explica como configurar o backend para usar o Supabase ao invés do Po
 ### 2.2 Database Connection String
 
 1. No dashboard do Supabase, vá em **Settings** → **Database**
-2. Na seção **Connection String**, escolha **URI** (não o formato de string de conexão)
-3. Copie a connection string no formato:
+2. Na seção **Connection String**, escolha a aba **Connection Pooling** (não URI direto!)
+3. Selecione o modo **Transaction**
+4. Copie a connection string no formato pooler:
    ```
-   postgresql://postgres:[YOUR-PASSWORD]@db.[PROJECT-REF].supabase.co:5432/postgres
+   postgresql://postgres.xxxxx:[YOUR-PASSWORD]@aws-0-sa-east-1.pooler.supabase.com:6543/postgres
    ```
-4. **IMPORTANTE**: Substitua `[YOUR-PASSWORD]` pela senha do banco que você configurou na criação do projeto
+5. **IMPORTANTE**: Substitua `[YOUR-PASSWORD]` pela senha do banco que você configurou na criação do projeto
 
 ### 2.3 Converter para SQLAlchemy
 
 O SQLAlchemy precisa de um formato específico. Converta sua connection string:
 
-**De:**
+**De (formato pooler do Supabase):**
 ```
-postgresql://postgres:[YOUR-PASSWORD]@db.[PROJECT-REF].supabase.co:5432/postgres
+postgresql://postgres.xxxxx:[YOUR-PASSWORD]@aws-0-sa-east-1.pooler.supabase.com:6543/postgres
 ```
 
-**Para:**
+**Para (formato SQLAlchemy):**
 ```
-postgresql+psycopg://postgres:[YOUR-PASSWORD]@db.[PROJECT-REF].supabase.co:5432/postgres
+postgresql+psycopg://postgres.xxxxx:[YOUR-PASSWORD]@aws-0-sa-east-1.pooler.supabase.com:6543/postgres
 ```
 
 Note a mudança: `postgresql://` → `postgresql+psycopg://`
+
+**Por que usar o Connection Pooler (porta 6543)?**
+- ✅ Evita problemas com IPv6 em containers Docker
+- ✅ Melhor performance e gerenciamento de conexões
+- ✅ Suporta mais conexões simultâneas
+- ✅ Recomendado para ambientes de produção
 
 ## 3. Configurar Variáveis de Ambiente
 

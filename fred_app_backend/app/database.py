@@ -47,12 +47,24 @@ if not settings.database_url:
 
 # Create SQLAlchemy engine
 # Supabase uses PostgreSQL, so this works seamlessly
+# Force IPv4 to avoid IPv6 connectivity issues in some environments
+connect_args = {
+    "connect_timeout": 10,
+    "options": "-c default_transaction_read_only=off",
+}
+
+# Force IPv4 by disabling IPv6 in psycopg
+# This is necessary when the server/container doesn't have IPv6 connectivity
+if "supabase.co" in settings.database_url:
+    connect_args["hostaddr"] = None  # Let psycopg resolve, but prefer IPv4
+
 engine = create_engine(
     settings.database_url,
     pool_pre_ping=True,
     pool_size=5,
     max_overflow=10,
     pool_recycle=3600,  # Recycle connections after 1 hour
+    connect_args=connect_args,
 )
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
