@@ -1,4 +1,5 @@
 from typing import Optional
+from urllib.parse import quote_plus
 
 from pydantic_settings import BaseSettings
 import pytz
@@ -10,15 +11,15 @@ class Settings(BaseSettings):
     supabase_key: Optional[str] = None
     supabase_service_role_key: Optional[str] = None
 
-    # Database settings (Supabase provides a PostgreSQL connection)
-    database_url: Optional[str] = None
-
-    # Legacy settings (mantidos para retrocompatibilidade, mas não usados com Supabase)
-    db_user: str = "fred_app"
-    db_password: str = "fred_secret"
-    db_host: str = "postgres"
+    # Database settings (formato recomendado pelo Supabase)
+    db_user: str = "postgres"
+    db_password: str = ""
+    db_host: str = "localhost"
     db_port: int = 5432
-    db_name: str = "fred_app"
+    db_name: str = "postgres"
+
+    # DATABASE_URL (será construída automaticamente se não fornecida)
+    database_url: Optional[str] = None
 
     secret_key: str = "your-secret-key-here"
     debug: bool = True
@@ -28,21 +29,18 @@ class Settings(BaseSettings):
         env_file = ".env"
 
     def model_post_init(self, __context):
-        # Se DATABASE_URL não for fornecida, tenta construir do Supabase ou Postgres local
+        # Se DATABASE_URL não for fornecida, constrói a partir das variáveis separadas
         if not self.database_url:
-            # Prioridade: usar Supabase se configurado
-            if self.supabase_url:
-                # Supabase fornece a DATABASE_URL no dashboard
-                # Se não tiver, construir manualmente não é recomendado
-                pass
-            else:
-                # Fallback para Postgres local (desenvolvimento)
-                object.__setattr__(
-                    self,
-                    "database_url",
-                    f"postgresql+psycopg://{self.db_user}:{self.db_password}"
-                    f"@{self.db_host}:{self.db_port}/{self.db_name}",
-                )
+            # URL-encode da senha para lidar com caracteres especiais
+            encoded_password = quote_plus(self.db_password)
+
+            # Constrói DATABASE_URL no formato SQLAlchemy
+            object.__setattr__(
+                self,
+                "database_url",
+                f"postgresql+psycopg://{self.db_user}:{encoded_password}"
+                f"@{self.db_host}:{self.db_port}/{self.db_name}",
+            )
 
 
 settings = Settings()
