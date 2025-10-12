@@ -5,6 +5,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Progress } from "@/components/ui/progress"
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
   Clock,
@@ -13,7 +22,6 @@ import {
   Home,
   Droplets,
   Brain,
-  Edit3,
   Plus,
   Trash2,
   History,
@@ -69,7 +77,7 @@ export default function FredCareApp() {
   } = usePetData()
 
   const [currentTab, setCurrentTab] = useState<"inicio" | "dashboard" | "glicemia" | "humor" | "historico">("inicio")
-  const [isEditingRoutine, setIsEditingRoutine] = useState(false)
+  const [isAddTaskModalOpen, setIsAddTaskModalOpen] = useState(false)
   const [newTaskTime, setNewTaskTime] = useState("")
   const [newTaskDescription, setNewTaskDescription] = useState("")
   const [newTaskPeriod, setNewTaskPeriod] = useState<"morning" | "afternoon" | "evening">("morning")
@@ -111,6 +119,7 @@ export default function FredCareApp() {
 
     setNewTaskTime("")
     setNewTaskDescription("")
+    setIsAddTaskModalOpen(false)
     toast.success("Tarefa adicionada!")
   }
 
@@ -147,55 +156,11 @@ export default function FredCareApp() {
       <>
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold">Rotina Diária</h2>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setIsEditingRoutine(!isEditingRoutine)}
-            className="h-8 px-3 text-xs"
-          >
-            <Edit3 className="h-3 w-3 mr-1" />
-            {isEditingRoutine ? "Concluir" : "Editar"}
+          <Button size="sm" onClick={() => setIsAddTaskModalOpen(true)} className="h-8 px-3 text-xs">
+            <Plus className="h-3 w-3 mr-1" />
+            Nova Tarefa
           </Button>
         </div>
-
-        {isEditingRoutine && (
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base">Adicionar Nova Tarefa</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="grid grid-cols-2 gap-2">
-                <input
-                  type="time"
-                  value={newTaskTime}
-                  onChange={(e) => setNewTaskTime(e.target.value)}
-                  className="px-3 py-2 border rounded-md text-sm"
-                  placeholder="Horário"
-                />
-                <select
-                  value={newTaskPeriod}
-                  onChange={(e) => setNewTaskPeriod(e.target.value as "morning" | "afternoon" | "evening")}
-                  className="px-3 py-2 border rounded-md text-sm"
-                >
-                  <option value="morning">Manhã</option>
-                  <option value="afternoon">Tarde</option>
-                  <option value="evening">Noite</option>
-                </select>
-              </div>
-              <input
-                type="text"
-                value={newTaskDescription}
-                onChange={(e) => setNewTaskDescription(e.target.value)}
-                className="w-full px-3 py-2 border rounded-md text-sm"
-                placeholder="Descrição da tarefa"
-              />
-              <Button onClick={addTask} size="sm" className="w-full">
-                <Plus className="h-3 w-3 mr-1" />
-                Adicionar Tarefa
-              </Button>
-            </CardContent>
-          </Card>
-        )}
 
         {Object.entries(groupedTasks).map(([period, tasks]) => (
           <Card key={period}>
@@ -209,7 +174,7 @@ export default function FredCareApp() {
               {tasks.map((task) => (
                 <div
                   key={task.id}
-                  className={`flex items-center gap-3 p-3 rounded-lg border transition-all ${
+                  className={`group flex items-center gap-3 p-3 rounded-lg border transition-all ${
                     task.completed ? "bg-muted/60 opacity-60" : "bg-background hover:bg-muted/30"
                   }`}
                 >
@@ -223,21 +188,74 @@ export default function FredCareApp() {
                       {task.task}
                     </p>
                   </div>
-                  {isEditingRoutine && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => deleteTask(task.id)}
-                      className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
-                  )}
+                  <Button
+                    aria-label="Remover tarefa"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => deleteTask(task.id)}
+                    className="h-8 w-8 p-0 text-muted-foreground hover:text-red-600 hover:bg-red-50 focus:text-red-600 focus:bg-red-50"
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </Button>
                 </div>
               ))}
             </CardContent>
           </Card>
         ))}
+
+        <Dialog open={isAddTaskModalOpen} onOpenChange={setIsAddTaskModalOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Adicionar nova tarefa</DialogTitle>
+              <DialogDescription>Defina o horário, período e descrição para incluir na rotina diária.</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-3">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="flex flex-col gap-1">
+                  <span className="text-sm font-medium">Horário</span>
+                  <input
+                    type="time"
+                    value={newTaskTime}
+                    onChange={(e) => setNewTaskTime(e.target.value)}
+                    className="px-3 py-2 border rounded-md text-sm"
+                    placeholder="Horário"
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <span className="text-sm font-medium">Período</span>
+                  <select
+                    value={newTaskPeriod}
+                    onChange={(e) => setNewTaskPeriod(e.target.value as "morning" | "afternoon" | "evening")}
+                    className="px-3 py-2 border rounded-md text-sm"
+                  >
+                    <option value="morning">Manhã</option>
+                    <option value="afternoon">Tarde</option>
+                    <option value="evening">Noite</option>
+                  </select>
+                </div>
+              </div>
+              <div className="flex flex-col gap-1">
+                <span className="text-sm font-medium">Descrição</span>
+                <input
+                  type="text"
+                  value={newTaskDescription}
+                  onChange={(e) => setNewTaskDescription(e.target.value)}
+                  className="w-full px-3 py-2 border rounded-md text-sm"
+                  placeholder="Descrição da tarefa"
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <DialogClose asChild>
+                <Button variant="outline">Cancelar</Button>
+              </DialogClose>
+              <Button onClick={addTask}>
+                <Plus className="h-3 w-3 mr-1" />
+                Adicionar Tarefa
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </>
     )
   }
@@ -524,15 +542,6 @@ export default function FredCareApp() {
     )
   }
 
-  const HomePage = () => {
-    return (
-      <div className="space-y-6 pb-20">
-        <GlucoseRegistrationCard />
-        {renderRoutineSection()}
-      </div>
-    )
-  }
-
   const HumorPage = () => {
     const { addMoodEntry } = usePetData()
     const [energia, setEnergia] = useState<"alta" | "media" | "baixa" | undefined>()
@@ -797,7 +806,12 @@ export default function FredCareApp() {
       </header>
 
       <main className="pt-20 px-4">
-        {currentTab === "inicio" && <HomePage />}
+        {currentTab === "inicio" && (
+          <div className="space-y-6 pb-20">
+            <GlucoseRegistrationCard />
+            {renderRoutineSection()}
+          </div>
+        )}
         {currentTab === "dashboard" && renderDashboard()}
         {currentTab === "glicemia" && <GlicemiaPage />}
         {currentTab === "humor" && <HumorPage />}
