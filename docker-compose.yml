@@ -15,6 +15,8 @@ services:
       - SUPABASE_KEY=${SUPABASE_KEY:-}
       - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY:-}
       - DATABASE_URL=${DATABASE_URL:-}
+      # Force IPv4 for PostgreSQL connections (avoids IPv6 issues)
+      - PGSSLMODE=prefer
       # Legacy Postgres settings (for local development fallback)
       - DB_HOST=${DB_HOST:-postgres}
       - DB_PORT=${DB_PORT:-5432}
