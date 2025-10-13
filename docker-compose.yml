@@ -93,6 +93,23 @@ services:
     networks:
       - fred-app-net
 
+  # NOVO SERVIÇO PARA SERVIR O ARQUIVO HTML
+  motion_workflow:
+    image: nginx:alpine
+    container_name: fred_app_motion_workflow
+    volumes:
+      # Mapeia o seu HTML para o arquivo index.html padrão do Nginx
+      - ./motion_workflow/Processo_site.html:/usr/share/nginx/html/index.html
+    restart: unless-stopped
+    networks:
+      - fred-app-net
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
   # Postgres local - DESABILITADO: usando Supabase agora
   # Descomente este serviço se precisar desenvolver localmente sem Supabase
   # postgres:
@@ -135,6 +152,8 @@ services:
     depends_on:
       - backend
       - frontend
+      - briefing
+      - motion_workflow
     networks:
       - fred-app-net
 
