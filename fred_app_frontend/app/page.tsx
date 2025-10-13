@@ -37,8 +37,8 @@ import { RoutineItem, GlucoseReading } from "@/types"
 import { PWAInstall } from "@/components/pwa-install"
 import { OfflineIndicator } from "@/components/offline-indicator"
 import { ToastContainer, toast } from "@/components/ui/toast"
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
-import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, ReferenceLine } from "recharts"
+import { ChartContainer, ChartTooltip } from "@/components/ui/chart"
+import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, ReferenceLine, ReferenceArea, Area } from "recharts"
 import { ThemeToggle } from "@/components/theme-toggle"
 
 interface GlicemiaRecord {
@@ -388,13 +388,69 @@ export default function FredCareApp() {
     }
 
     const chartData = glucoseReadings
-      .slice(0, 10)
+      .slice(0, 14)
       .reverse()
-      .map((reading, index) => ({
-        name: `${index + 1}`,
-        value: reading.value,
-        date: new Date(reading.created_at).toLocaleDateString("pt-BR"),
-      }))
+      .map((reading) => {
+        const createdAt = new Date(reading.created_at)
+        const shortLabel = createdAt
+          .toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })
+          .replace(".", "")
+        const detailedLabel = createdAt.toLocaleString("pt-BR", {
+          day: "2-digit",
+          month: "long",
+          hour: "2-digit",
+          minute: "2-digit",
+        })
+
+        return {
+          id: reading.id,
+          value: reading.value,
+          label: shortLabel,
+          tooltipLabel: detailedLabel,
+          timeOfDay: TIME_OF_DAY_LABELS[reading.time_of_day] ?? reading.time_of_day,
+          insulinDose: reading.insulin_dose,
+          protocol: reading.protocol,
+        }
+      })
+
+    const renderGlucoseDot = (props: any) => {
+      const { cx, cy, value } = props
+      if (typeof cx !== "number" || typeof cy !== "number") return null
+
+      const statusColor =
+        value < 80 ? "#ef4444" : value > 250 ? "#d97706" : value > 150 ? "#f97316" : "#2563eb"
+
+      return (
+        <g>
+          <circle cx={cx} cy={cy} r={6} fill="hsl(var(--background))" stroke={statusColor} strokeWidth={2} />
+          <circle cx={cx} cy={cy} r={3} fill={statusColor} />
+        </g>
+      )
+    }
+
+    const GlucoseTooltip = ({ active, payload }: any) => {
+      if (!active || !payload || !payload.length) return null
+      const item = payload[0].payload
+
+      return (
+        <div className="flex min-w-[180px] flex-col gap-2 rounded-lg border border-border bg-background/95 p-3 text-sm shadow-lg backdrop-blur">
+          <div className="space-y-1">
+            <p className="text-[0.65rem] font-semibold uppercase text-muted-foreground">Registro</p>
+            <p className="font-semibold leading-snug text-foreground">{item.tooltipLabel}</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-base font-semibold text-blue-600 dark:text-blue-300">{item.value} mg/dL</span>
+            <span className="rounded-full bg-blue-100 px-2 py-0.5 text-[0.65rem] font-medium uppercase tracking-wide text-blue-700 dark:bg-slate-800 dark:text-blue-200">
+              {item.timeOfDay}
+            </span>
+          </div>
+          {item.insulinDose !== null && item.insulinDose !== undefined && (
+            <p className="text-xs text-muted-foreground">Insulina aplicada: {item.insulinDose} U</p>
+          )}
+          {item.protocol && <p className="text-xs leading-relaxed text-muted-foreground">{item.protocol}</p>}
+        </div>
+      )
+    }
 
     const [selectedReading, setSelectedReading] = useState<GlucoseReading | null>(null)
     const [isInsulinModalOpen, setIsInsulinModalOpen] = useState(false)
@@ -552,23 +608,55 @@ export default function FredCareApp() {
                     color: "hsl(var(--chart-1))",
                   },
                 }}
-                className="h-[200px]"
+                className="h-[240px]"
               >
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={chartData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="name" />
-                    <YAxis domain={[50, 400]} />
-                    <ChartTooltip content={<ChartTooltipContent />} />
-                    <ReferenceLine y={80} stroke="#ef4444" strokeDasharray="5 5" label="Baixo" />
-                    <ReferenceLine y={150} stroke="#22c55e" strokeDasharray="5 5" label="Normal" />
-                    <ReferenceLine y={250} stroke="#f59e0b" strokeDasharray="5 5" label="Alto" />
+                  <LineChart
+                    data={chartData}
+                    margin={{
+                      top: 30,
+                      right: 12,
+                      left: 12,
+                      bottom: 10,
+                    }}
+                  >
+                    <defs>
+                      <linearGradient id="glucoseArea" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="var(--color-value)" stopOpacity={0.35} />
+                        <stop offset="95%" stopColor="var(--color-value)" stopOpacity={0.05} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="6 8" stroke="hsl(var(--chart-grid, 215 20% 83%))" strokeOpacity={0.6} />
+                    <XAxis
+                      dataKey="label"
+                      tickLine={false}
+                      axisLine={false}
+                      tickMargin={12}
+                      fontSize={12}
+                      tickFormatter={(value: string) => value.toUpperCase()}
+                    />
+                    <YAxis
+                      tickLine={false}
+                      axisLine={false}
+                      tickMargin={8}
+                      width={46}
+                      fontSize={12}
+                      domain={["dataMin - 20", "dataMax + 20"]}
+                      tickFormatter={(value) => `${value}`}
+                    />
+                    <ChartTooltip content={<GlucoseTooltip />} cursor={{ strokeDasharray: "4 4", stroke: "hsl(var(--muted-foreground))" }} />
+                    <ReferenceArea y1={80} y2={150} fill="hsl(var(--chart-2, 152 76% 65%))" fillOpacity={0.08} />
+                    <ReferenceLine y={80} stroke="#ef4444" strokeDasharray="6 4" />
+                    <ReferenceLine y={150} stroke="#22c55e" strokeDasharray="6 4" />
+                    <ReferenceLine y={250} stroke="#f59e0b" strokeDasharray="6 4" />
+                    <Area type="monotone" dataKey="value" stroke="none" fill="url(#glucoseArea)" />
                     <Line
                       type="monotone"
                       dataKey="value"
                       stroke="var(--color-value)"
-                      strokeWidth={2}
-                      dot={{ fill: "var(--color-value)" }}
+                      strokeWidth={3}
+                      dot={renderGlucoseDot}
+                      activeDot={{ r: 8 }}
                     />
                   </LineChart>
                 </ResponsiveContainer>
