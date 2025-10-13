@@ -84,8 +84,11 @@ class GlucoseReadingBase(BaseModel):
     date: Optional[str] = None
 
 
-class GlucoseReadingCreate(GlucoseReadingBase):
-    pass
+class GlucoseReadingCreate(BaseModel):
+    value: float
+    protocol: Optional[str] = None
+    notes: Optional[str] = None
+    date: Optional[str] = None
 
 
 class GlucoseReading(GlucoseReadingBase):

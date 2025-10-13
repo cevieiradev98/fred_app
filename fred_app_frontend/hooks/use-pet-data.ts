@@ -253,7 +253,6 @@ export function usePetData() {
     try {
       await glucoseService.createGlucoseReading(currentPetId, {
         value,
-        time_of_day: timeOfDay,
         protocol,
         notes,
       })

@@ -4,7 +4,6 @@ import { GlucoseReading } from '../../types'
 
 export interface CreateGlucoseReadingData {
   value: number
-  time_of_day: string
   protocol?: string
   notes?: string
   date?: string

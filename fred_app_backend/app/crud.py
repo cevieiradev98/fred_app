@@ -202,14 +202,20 @@ def get_glucose_readings(db: Session, pet_id: str, limit: int = 30, sort: Option
 
 
 def create_glucose_reading(db: Session, glucose_reading: schemas.GlucoseReadingCreate, pet_id: str):
+    from app.utils import get_time_of_day_from_hour
+
     # Set default date if not provided
     reading_date = glucose_reading.date or str(date.today())
-    
+
+    # Calculate time_of_day based on current hour in Brasília timezone
+    current_time = now_brasilia()
+    time_of_day = get_time_of_day_from_hour(current_time.hour)
+
     db_glucose_reading = models.GlucoseReading(
         id=str(uuid.uuid4()),
         pet_id=pet_id,
         value=glucose_reading.value,
-        time_of_day=glucose_reading.time_of_day,
+        time_of_day=time_of_day,
         protocol=glucose_reading.protocol,
         notes=glucose_reading.notes,
         date=reading_date

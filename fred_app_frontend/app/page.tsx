@@ -59,6 +59,7 @@ const TIME_OF_DAY_LABELS: Record<string, string> = {
   morning: "Manhã",
   afternoon: "Tarde",
   evening: "Noite",
+  dawn: "Madrugada",
 }
 
 export default function FredCareApp() {
@@ -294,7 +295,6 @@ export default function FredCareApp() {
 
   const GlucoseRegistrationCard = () => {
     const [newValue, setNewValue] = useState("")
-    const [timeOfDay, setTimeOfDay] = useState("morning")
 
     const handleAddReading = async () => {
       const value = Number.parseInt(newValue)
@@ -315,7 +315,7 @@ export default function FredCareApp() {
         protocol = "🚨 MUITO ALTO - Contatar veterinário"
       }
 
-      await addGlucoseReading(value, timeOfDay, protocol)
+      await addGlucoseReading(value, "", protocol)
       setNewValue("")
       toast.success("Glicemia registrada!")
     }
@@ -326,25 +326,19 @@ export default function FredCareApp() {
           <CardTitle className="text-lg">Registrar Glicemia</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 gap-3">
+          <div className="flex flex-col gap-2">
             <input
               type="number"
               value={newValue}
               onChange={(e) => setNewValue(e.target.value)}
-              placeholder="mg/dL"
+              placeholder="Valor em mg/dL"
               className="px-3 py-2 border rounded-md text-sm"
               min="50"
               max="500"
             />
-            <select
-              value={timeOfDay}
-              onChange={(e) => setTimeOfDay(e.target.value)}
-              className="px-3 py-2 border rounded-md text-sm"
-            >
-              <option value="morning">Manhã</option>
-              <option value="afternoon">Tarde</option>
-              <option value="evening">Noite</option>
-            </select>
+            <p className="text-xs text-muted-foreground">
+              O período do dia será determinado automaticamente pelo horário do registro
+            </p>
           </div>
           <Button onClick={handleAddReading} className="w-full">
             <Droplets className="h-4 w-4 mr-2" />
