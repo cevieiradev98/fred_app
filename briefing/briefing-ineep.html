@@ -1,0 +1,938 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Briefing INEEP - Projeto COP30</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #f5f5f7;
+            min-height: 100vh;
+            padding: 40px 20px;
+            line-height: 1.6;
+            color: #1d1d1f;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            overflow: hidden;
+        }
+
+        .header {
+            background: #1d1d1f;
+            color: white;
+            padding: 60px 40px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 600;
+            letter-spacing: -0.5px;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.8;
+            font-weight: 300;
+        }
+
+        .form-content {
+            padding: 50px 40px;
+        }
+
+        .section {
+            margin-bottom: 50px;
+            padding-bottom: 40px;
+            border-bottom: 1px solid #e5e5e7;
+        }
+
+        .section:last-child {
+            border-bottom: none;
+        }
+
+        .section-title {
+            font-size: 1.6em;
+            color: #1d1d1f;
+            margin-bottom: 25px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .section-number {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            background: #1d1d1f;
+            color: white;
+            border-radius: 50%;
+            font-size: 0.9em;
+            font-weight: 600;
+        }
+
+        .field-group {
+            margin-bottom: 28px;
+        }
+
+        label {
+            display: block;
+            font-weight: 500;
+            color: #1d1d1f;
+            margin-bottom: 8px;
+            font-size: 1em;
+        }
+
+        input[type="text"],
+        input[type="email"],
+        input[type="date"],
+        textarea,
+        select {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid #d2d2d7;
+            border-radius: 8px;
+            font-size: 1em;
+            font-family: inherit;
+            transition: all 0.2s ease;
+            background: white;
+        }
+
+        input[type="text"]:focus,
+        input[type="email"]:focus,
+        input[type="date"]:focus,
+        textarea:focus,
+        select:focus {
+            outline: none;
+            border-color: #1d1d1f;
+            box-shadow: 0 0 0 3px rgba(29, 29, 31, 0.1);
+        }
+
+        textarea {
+            min-height: 120px;
+            resize: vertical;
+        }
+
+        .checkbox-group,
+        .radio-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 12px;
+        }
+
+        .checkbox-item,
+        .radio-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 14px;
+            border: 1px solid #d2d2d7;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background: white;
+        }
+
+        .checkbox-item:hover,
+        .radio-item:hover {
+            border-color: #1d1d1f;
+            background: #fafafa;
+        }
+
+        .checkbox-item input[type="checkbox"],
+        .radio-item input[type="radio"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+            accent-color: #1d1d1f;
+        }
+
+        .checkbox-item label,
+        .radio-item label {
+            margin: 0;
+            cursor: pointer;
+            font-weight: 400;
+            flex: 1;
+        }
+
+        .info-box {
+            background: #f5f5f7;
+            border-left: 3px solid #1d1d1f;
+            padding: 24px;
+            border-radius: 8px;
+            margin: 30px 0;
+        }
+
+        .info-box h3 {
+            color: #1d1d1f;
+            margin-bottom: 16px;
+            font-size: 1.2em;
+            font-weight: 600;
+        }
+
+        .info-box p {
+            color: #424245;
+            margin-bottom: 10px;
+            font-size: 0.95em;
+        }
+
+        .process-step {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 12px;
+            align-items: flex-start;
+        }
+
+        .process-day {
+            flex-shrink: 0;
+            font-weight: 600;
+            color: #1d1d1f;
+            min-width: 120px;
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 16px;
+            background: #1d1d1f;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1em;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin-top: 30px;
+        }
+
+        .submit-btn:hover {
+            background: #424245;
+            transform: translateY(-1px);
+        }
+
+        .submit-btn:active {
+            transform: translateY(0);
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 20px 10px;
+            }
+
+            .header {
+                padding: 40px 20px;
+            }
+
+            .header h1 {
+                font-size: 1.8em;
+            }
+
+            .form-content {
+                padding: 30px 20px;
+            }
+
+            .section-title {
+                font-size: 1.3em;
+            }
+
+            .process-day {
+                min-width: 100px;
+                font-size: 0.9em;
+            }
+        }
+
+        .required {
+            color: #e74c3c;
+        }
+
+        .helper-text {
+            font-size: 0.9em;
+            color: #86868b;
+            margin-top: 6px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Briefing Geral - Projeto INEEP</h1>
+            <p>Definição de Identidade Visual e Processo para COP30</p>
+        </div>
+
+        <form class="form-content" id="briefingForm">
+            
+            <!-- SEÇÃO 1: INFORMAÇÕES BÁSICAS -->
+            <div class="section">
+                <h2 class="section-title">
+                    <span class="section-number">1</span>
+                    Sobre o Projeto
+                </h2>
+
+                <div class="field-group">
+                    <label>Nome da instituição</label>
+                    <input type="text" value="INEEP - Instituto de Estudos Estratégicos de Petróleo, Gás Natural e Biocombustíveis" readonly>
+                </div>
+
+                <div class="field-group">
+                    <label>Período do projeto</label>
+                    <input type="text" value="Outubro 2024 - Novembro 2025 (COP30)" readonly>
+                </div>
+
+                <div class="field-group">
+                    <label>Escopo contratado</label>
+                    <input type="text" value="Pacote B - 4 vídeos/mês + 6 posts estáticos/mês" readonly>
+                </div>
+
+                <div class="field-group">
+                    <label>Responsável pelo projeto <span class="required">*</span></label>
+                    <input type="text" name="responsavel" required placeholder="Nome completo">
+                </div>
+
+                <div class="field-group">
+                    <label>E-mail principal <span class="required">*</span></label>
+                    <input type="email" name="email" required placeholder="seu@email.com">
+                </div>
+            </div>
+
+            <!-- SEÇÃO 2: SOBRE A COMUNICAÇÃO -->
+            <div class="section">
+                <h2 class="section-title">
+                    <span class="section-number">2</span>
+                    Sobre a Comunicação do INEEP
+                </h2>
+
+                <div class="field-group">
+                    <label>Qual a missão/propósito do INEEP que deve transparecer nos conteúdos? <span class="required">*</span></label>
+                    <textarea name="missao" required placeholder="Descreva a missão e valores que devem estar presentes na comunicação..."></textarea>
+                </div>
+
+                <div class="field-group">
+                    <label>Quem é o público-alvo principal dos conteúdos? <span class="required">*</span></label>
+                    <div class="checkbox-group">
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="publico1" name="publico" value="geral">
+                            <label for="publico1">Público geral interessado em energia</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="publico2" name="publico" value="profissionais">
+                            <label for="publico2">Profissionais do setor energético</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="publico3" name="publico" value="formuladores">
+                            <label for="publico3">Formuladores de políticas públicas</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="publico4" name="publico" value="academicos">
+                            <label for="publico4">Acadêmicos e pesquisadores</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="publico5" name="publico" value="imprensa">
+                            <label for="publico5">Imprensa</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="publico6" name="publico" value="outro_publico">
+                            <label for="publico6">Outro</label>
+                        </div>
+                    </div>
+                    <input type="text" name="publico_outro" placeholder="Se outro, especifique..." style="margin-top: 10px;">
+                </div>
+
+                <div class="field-group">
+                    <label>Descreva em 2-3 frases como o INEEP quer ser percebido pelo público <span class="required">*</span></label>
+                    <textarea name="percepcao" required placeholder="Como vocês querem que o público veja e sinta o INEEP?"></textarea>
+                </div>
+            </div>
+
+            <!-- SEÇÃO 3: IDENTIDADE VISUAL -->
+            <div class="section">
+                <h2 class="section-title">
+                    <span class="section-number">3</span>
+                    Identidade Visual
+                </h2>
+
+                <div class="field-group">
+                    <label>Cores da marca <span class="required">*</span></label>
+                    <textarea name="cores" required placeholder="Ex: Azul #0066CC, Verde #00AA44, ou descreva as cores principais"></textarea>
+                    <p class="helper-text">Informe os códigos hex ou descreva as cores principais da marca</p>
+                </div>
+
+                <div class="field-group">
+                    <label>Vocês têm manual de marca/brandbook?</label>
+                    <div class="radio-group">
+                        <div class="radio-item">
+                            <input type="radio" id="manual1" name="manual" value="sim_enviar">
+                            <label for="manual1">Sim, vou enviar por e-mail/drive</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" id="manual2" name="manual" value="sim_flexivel">
+                            <label for="manual2">Sim, mas é flexível</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" id="manual3" name="manual" value="nao">
+                            <label for="manual3">Não temos</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="field-group">
+                    <label>Referências visuais de vídeos/canais que vocês admiram</label>
+                    <textarea name="ref_videos" placeholder="Cole aqui links de vídeos ou canais que vocês acham inspiradores (Instagram, YouTube, TikTok, etc)"></textarea>
+                    <p class="helper-text">Isso me ajuda a entender o estilo visual que vocês gostam</p>
+                </div>
+
+                <div class="field-group">
+                    <label>Referências visuais de feeds/perfis que vocês admiram</label>
+                    <textarea name="ref_feeds" placeholder="Cole aqui links de perfis no Instagram, LinkedIn ou outras redes com identidade visual que vocês gostam"></textarea>
+                </div>
+            </div>
+
+            <!-- SEÇÃO 4: SOBRE OS VÍDEOS -->
+            <div class="section">
+                <h2 class="section-title">
+                    <span class="section-number">4</span>
+                    Sobre os Vídeos
+                </h2>
+
+                <div class="info-box" style="margin-bottom: 30px;">
+                    <p><strong>Estilo de animação:</strong> Motion design com colagens criativas (já definido)</p>
+                    <p><strong>Roteiro:</strong> Vocês fornecerão o roteiro completo de cada vídeo</p>
+                </div>
+
+                <div class="field-group">
+                    <label>Objetivos gerais dos vídeos (pode marcar mais de um) <span class="required">*</span></label>
+                    <div class="checkbox-group">
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="obj1" name="objetivos" value="educar">
+                            <label for="obj1">Educar sobre conceitos de energia</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="obj2" name="objetivos" value="transicao">
+                            <label for="obj2">Explicar transição energética</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="obj3" name="objetivos" value="dados">
+                            <label for="obj3">Apresentar dados e pesquisas do INEEP</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="obj4" name="objetivos" value="posicionamento">
+                            <label for="obj4">Posicionamento em temas atuais</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="obj5" name="objetivos" value="eventos">
+                            <label for="obj5">Divulgar eventos/ações</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="obj6" name="objetivos" value="outro_obj">
+                            <label for="obj6">Outro</label>
+                        </div>
+                    </div>
+                    <input type="text" name="objetivos_outro" placeholder="Se outro, especifique..." style="margin-top: 10px;">
+                </div>
+
+                <div class="field-group">
+                    <label>Elementos obrigatórios em todos os vídeos</label>
+                    <div class="checkbox-group">
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="elem1" name="elementos" value="logo">
+                            <label for="elem1">Logo do INEEP</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="elem2" name="elementos" value="assinatura">
+                            <label for="elem2">Assinatura sonora</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="elem3" name="elementos" value="cta">
+                            <label for="elem3">Call-to-action final</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="elem4" name="elementos" value="creditos">
+                            <label for="elem4">Créditos</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="elem5" name="elementos" value="nenhum">
+                            <label for="elem5">Nenhum elemento fixo obrigatório</label>
+                        </div>
+                    </div>
+                    <input type="text" name="logo_posicao" placeholder="Se logo, especifique onde (abertura/encerramento/canto fixo)..." style="margin-top: 10px;">
+                </div>
+
+                <div class="field-group">
+                    <label>Vocês fornecerão para cada vídeo</label>
+                    <div class="checkbox-group">
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="forn1" name="fornecimento" value="roteiro" checked disabled>
+                            <label for="forn1">Roteiro escrito ✓</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="forn2" name="fornecimento" value="locucao" checked disabled>
+                            <label for="forn2">Locução/off gravado ✓</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="forn3" name="fornecimento" value="videos">
+                            <label for="forn3">Vídeos brutos (quando aplicável)</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="forn4" name="fornecimento" value="imagens" checked disabled>
+                            <label for="forn4">Imagens de apoio (Canva Pro) ✓</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="forn5" name="fornecimento" value="trilha">
+                            <label for="forn5">Trilha sonora específica</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="forn6" name="fornecimento" value="outros_forn">
+                            <label for="forn6">Outros</label>
+                        </div>
+                    </div>
+                    <input type="text" name="fornecimento_outros" placeholder="Se outros, especifique..." style="margin-top: 10px;">
+                </div>
+            </div>
+
+            <!-- SEÇÃO 5: SOBRE OS POSTS -->
+            <div class="section">
+                <h2 class="section-title">
+                    <span class="section-number">5</span>
+                    Sobre os Posts Estáticos
+                </h2>
+
+                <div class="field-group">
+                    <label>Objetivo principal dos posts <span class="required">*</span></label>
+                    <div class="radio-group">
+                        <div class="radio-item">
+                            <input type="radio" id="objpost1" name="objetivo_posts" value="complementar">
+                            <label for="objpost1">Complementar os vídeos</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" id="objpost2" name="objetivo_posts" value="independentes">
+                            <label for="objpost2">Conteúdos independentes</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" id="objpost3" name="objetivo_posts" value="divulgar">
+                            <label for="objpost3">Divulgar os vídeos</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" id="objpost4" name="objetivo_posts" value="mix">
+                            <label for="objpost4">Mix de todos</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="field-group">
+                    <label>Formatos desejados <span class="required">*</span></label>
+                    <div class="checkbox-group">
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="formato1" name="formatos" value="feed">
+                            <label for="formato1">Posts únicos para feed (4:5 vertical)</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="formato2" name="formatos" value="carrossel">
+                            <label for="formato2">Carrosséis educativos</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="formato3" name="formatos" value="stories">
+                            <label for="formato3">Stories (9:16)</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="formato4" name="formatos" value="mix_formatos">
+                            <label for="formato4">Mix conforme o conteúdo</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="field-group">
+                    <label>Estilo visual dos posts</label>
+                    <div class="radio-group">
+                        <div class="radio-item">
+                            <input type="radio" id="estilopost1" name="estilo_posts" value="alinhado">
+                            <label for="estilopost1">Alinhado exatamente com os vídeos</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" id="estilopost2" name="estilo_posts" value="complementar">
+                            <label for="estilopost2">Complementar aos vídeos mas pode ter personalidade própria</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" id="estilopost3" name="estilo_posts" value="livre">
+                            <label for="estilopost3">Totalmente livre</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="field-group">
+                    <label>Vocês fornecerão para os posts</label>
+                    <div class="checkbox-group">
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="fornpost1" name="fornecimento_posts" value="textos">
+                            <label for="fornpost1">Textos prontos</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="fornpost2" name="fornecimento_posts" value="bullets">
+                            <label for="fornpost2">Tópicos/bullets (designer formata)</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="fornpost3" name="fornecimento_posts" value="tema">
+                            <label for="fornpost3">Apenas o tema (designer cria conteúdo visual)</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="fornpost4" name="fornecimento_posts" value="imagens_posts">
+                            <label for="fornpost4">Imagens específicas</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SEÇÃO 6: O QUE NÃO FAZER -->
+            <div class="section">
+                <h2 class="section-title">
+                    <span class="section-number">6</span>
+                    O Que Não Fazer
+                </h2>
+
+                <div class="field-group">
+                    <label>Existem temas, imagens ou abordagens que devem ser EVITADOS?</label>
+                    <textarea name="evitar" placeholder="Ex: não usar imagens de combustíveis fósseis de forma negativa, evitar tom alarmista, etc."></textarea>
+                </div>
+
+                <div class="field-group">
+                    <label>Há concorrentes ou referências que NÃO devemos parecer?</label>
+                    <textarea name="nao_parecer" placeholder="Ex: perfis ou estilos que vocês querem se diferenciar"></textarea>
+                </div>
+
+                <div class="field-group">
+                    <label>Restrições de linguagem ou termos</label>
+                    <textarea name="restricoes" placeholder="Ex: palavras ou expressões que devem ser evitadas"></textarea>
+                </div>
+            </div>
+
+            <!-- SEÇÃO 7: PROCESSO E LOGÍSTICA -->
+            <div class="section">
+                <h2 class="section-title">
+                    <span class="section-number">7</span>
+                    Processo e Logística
+                </h2>
+
+                <div class="field-group">
+                    <label>Como será o envio dos roteiros/briefings semanais? <span class="required">*</span></label>
+                    <div class="radio-group">
+                        <div class="radio-item">
+                            <input type="radio" id="envio1" name="envio" value="whatsapp">
+                            <label for="envio1">Via WhatsApp</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" id="envio2" name="envio" value="email">
+                            <label for="envio2">Por e-mail</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" id="envio3" name="envio" value="plataforma">
+                            <label for="envio3">Plataforma específica</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" id="envio4" name="envio" value="combinar">
+                            <label for="envio4">A combinar</label>
+                        </div>
+                    </div>
+                    <input type="text" name="plataforma" placeholder="Se plataforma específica, qual?" style="margin-top: 10px;">
+                </div>
+
+                <div class="field-group">
+                    <label>Quem aprovará os materiais? <span class="required">*</span></label>
+                    <input type="text" name="aprovador" required placeholder="Nome e cargo">
+                </div>
+
+                <div class="field-group">
+                    <label>Haverá mais alguém no processo de aprovação?</label>
+                    <div class="radio-group">
+                        <div class="radio-item">
+                            <input type="radio" id="aprov1" name="num_aprovadores" value="1">
+                            <label for="aprov1">Não, apenas 1 pessoa</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" id="aprov2" name="num_aprovadores" value="2-3">
+                            <label for="aprov2">Sim, 2-3 pessoas</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" id="aprov3" name="num_aprovadores" value="comite">
+                            <label for="aprov3">Sim, comitê maior</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="field-group">
+                    <label>Tempo máximo de resposta para aprovações</label>
+                    <div class="radio-group">
+                        <div class="radio-item">
+                            <input type="radio" id="tempo1" name="tempo_aprovacao" value="mesmo_dia">
+                            <label for="tempo1">Mesmo dia</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" id="tempo2" name="tempo_aprovacao" value="24h">
+                            <label for="tempo2">24h</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" id="tempo3" name="tempo_aprovacao" value="48h">
+                            <label for="tempo3">48h</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" id="tempo4" name="tempo_aprovacao" value="flexivel">
+                            <label for="tempo4">Flexível</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="field-group">
+                    <label>Melhor dia da semana para reuniões de alinhamento (se necessário)</label>
+                    <input type="text" name="dia_reuniao" placeholder="Ex: Segunda ou terça">
+                </div>
+
+                <div class="field-group">
+                    <label>Melhor horário para reuniões</label>
+                    <div class="radio-group">
+                        <div class="radio-item">
+                            <input type="radio" id="horario1" name="horario" value="manha">
+                            <label for="horario1">Manhã (11h-12h)</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" id="horario2" name="horario" value="tarde">
+                            <label for="horario2">Tarde (14h-17h)</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" id="horario3" name="horario" value="flexivel_horario">
+                            <label for="horario3">Flexível</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SEÇÃO 8: MATERIAIS E ASSETS -->
+            <div class="section">
+                <h2 class="section-title">
+                    <span class="section-number">8</span>
+                    Materiais e Assets
+                </h2>
+
+                <div class="field-group">
+                    <label>Vocês têm banco de imagens próprio?</label>
+                    <div class="radio-group">
+                        <div class="radio-item">
+                            <input type="radio" id="banco1" name="banco_imagens" value="sim">
+                            <label for="banco1">Sim</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" id="banco2" name="banco_imagens" value="canva" checked>
+                            <label for="banco2">Usamos Canva Pro</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" id="banco3" name="banco_imagens" value="nao_banco">
+                            <label for="banco3">Não temos</label>
+                        </div>
+                    </div>
+                    <input type="text" name="qual_banco" placeholder="Se sim, qual banco?" style="margin-top: 10px;">
+                </div>
+
+                <div class="field-group">
+                    <label>Vocês têm ilustrações/ícones próprios?</label>
+                    <div class="radio-group">
+                        <div class="radio-item">
+                            <input type="radio" id="icones1" name="icones" value="sim_icones">
+                            <label for="icones1">Sim, vou enviar</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" id="icones2" name="icones" value="nao_icones">
+                            <label for="icones2">Não, designer pode criar/buscar</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="field-group">
+                    <label>Trilhas sonoras</label>
+                    <div class="radio-group">
+                        <div class="radio-item">
+                            <input type="radio" id="trilha1" name="trilhas" value="biblioteca">
+                            <label for="trilha1">Temos biblioteca própria</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" id="trilha2" name="trilhas" value="livres">
+                            <label for="trilha2">Podem usar bibliotecas livres (Epidemic, Artlist, etc)</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" id="trilha3" name="trilhas" value="caso_caso">
+                            <label for="trilha3">Vamos fornecer caso a caso</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SEÇÃO 9: EXPECTATIVAS -->
+            <div class="section">
+                <h2 class="section-title">
+                    <span class="section-number">9</span>
+                    Expectativas e Objetivos
+                </h2>
+
+                <div class="field-group">
+                    <label>O que seria um resultado EXCELENTE para vocês neste projeto? <span class="required">*</span></label>
+                    <textarea name="resultado_excelente" required placeholder="Descreva como seria o sucesso deste projeto na visão de vocês..."></textarea>
+                </div>
+
+                <div class="field-group">
+                    <label>Como vocês medirão o sucesso dos conteúdos?</label>
+                    <div class="checkbox-group">
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="metrica1" name="metricas" value="engajamento">
+                            <label for="metrica1">Engajamento nas redes</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="metrica2" name="metricas" value="alcance">
+                            <label for="metrica2">Alcance</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="metrica3" name="metricas" value="feedback">
+                            <label for="metrica3">Feedback qualitativo da audiência</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="metrica4" name="metricas" value="prazos">
+                            <label for="metrica4">Cumprimento dos prazos</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="metrica5" name="metricas" value="qualidade">
+                            <label for="metrica5">Qualidade visual</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="metrica6" name="metricas" value="outra_metrica">
+                            <label for="metrica6">Outro</label>
+                        </div>
+                    </div>
+                    <input type="text" name="metricas_outro" placeholder="Se outro, especifique..." style="margin-top: 10px;">
+                </div>
+
+                <div class="field-group">
+                    <label>Algo mais que não foi perguntado mas é importante sabermos?</label>
+                    <textarea name="observacoes" placeholder="Qualquer informação adicional relevante para o projeto..."></textarea>
+                </div>
+            </div>
+
+            <!-- INFO BOX DO PROCESSO -->
+            <div class="info-box">
+                <h3>Entendendo o Processo</h3>
+                <p><strong>Para cada vídeo, seguiremos estas etapas:</strong></p>
+                
+                <div class="process-step">
+                    <span class="process-day">Segunda-feira</span>
+                    <div>Vocês enviam roteiro + materiais</div>
+                </div>
+                
+                <div class="process-step">
+                    <span class="process-day">Segunda/Terça</span>
+                    <div>Reunião rápida de alinhamento (15-30min)</div>
+                </div>
+                
+                <div class="process-step">
+                    <span class="process-day">Terça/Quarta</span>
+                    <div>Moodboard + frames-chave (aprovação de vocês)</div>
+                </div>
+                
+                <div class="process-step">
+                    <span class="process-day">Quarta a Sexta</span>
+                    <div>Animação</div>
+                </div>
+                
+                <div class="process-step">
+                    <span class="process-day">Sexta</span>
+                    <div>Prévia do vídeo finalizado</div>
+                </div>
+                
+                <div class="process-step">
+                    <span class="process-day">Sábado/Domingo</span>
+                    <div>Ajustes (se necessário)</div>
+                </div>
+                
+                <div class="process-step">
+                    <span class="process-day">Domingo/Segunda</span>
+                    <div>Entrega final</div>
+                </div>
+                
+                <p style="margin-top: 16px; font-weight: 600;">Timeline: ~5-7 dias por vídeo</p>
+            </div>
+
+            <button type="submit" class="submit-btn">Enviar Briefing</button>
+        </form>
+    </div>
+
+    <script>
+        const form = document.getElementById('briefingForm');
+
+        function serializeForm(formElement) {
+            const data = {};
+            const multiValueFields = new Set();
+
+            Array.from(formElement.elements).forEach((element) => {
+                if (!element.name || element.disabled) {
+                    return;
+                }
+
+                if (element.type === 'checkbox') {
+                    if (!multiValueFields.has(element.name)) {
+                        multiValueFields.add(element.name);
+                        data[element.name] = [];
+                    }
+                } else if (element.type === 'radio') {
+                    if (!Object.prototype.hasOwnProperty.call(data, element.name)) {
+                        data[element.name] = '';
+                    }
+                } else if (!Object.prototype.hasOwnProperty.call(data, element.name)) {
+                    data[element.name] = '';
+                }
+            });
+
+            const formData = new FormData(formElement);
+
+            for (const [key, value] of formData.entries()) {
+                if (multiValueFields.has(key)) {
+                    data[key].push(value);
+                } else if (Array.isArray(data[key])) {
+                    data[key].push(value);
+                } else {
+                    data[key] = value;
+                }
+            }
+
+            return data;
+        }
+
+        form.addEventListener('submit', function (event) {
+            event.preventDefault();
+
+            const data = serializeForm(form);
+
+            fetch('/api/briefing', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            }).then((response) => {
+                if (!response.ok) {
+                    throw new Error(`Erro ao salvar briefing (status ${response.status})`);
+                }
+                form.reset();
+            }).catch((error) => {
+                console.error('Falha ao enviar briefing:', error);
+            });
+        });
+    </script>
+</body>
+</html>
