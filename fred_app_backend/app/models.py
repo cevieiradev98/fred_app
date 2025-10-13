@@ -65,6 +65,7 @@ class GlucoseReading(Base):
     protocol = Column(String, nullable=True)
     notes = Column(Text, nullable=True)
     date = Column(String, nullable=False)  # YYYY-MM-DD format
+    insulin_dose = Column(Float, nullable=True)
     created_at = Column(DateTime(timezone=True), default=now_brasilia)
 
     # Relationship

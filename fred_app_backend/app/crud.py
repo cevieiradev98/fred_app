@@ -218,9 +218,27 @@ def create_glucose_reading(db: Session, glucose_reading: schemas.GlucoseReadingC
         time_of_day=time_of_day,
         protocol=glucose_reading.protocol,
         notes=glucose_reading.notes,
+        insulin_dose=glucose_reading.insulin_dose,
         date=reading_date
     )
     db.add(db_glucose_reading)
+    db.commit()
+    db.refresh(db_glucose_reading)
+    return db_glucose_reading
+
+
+def update_glucose_reading(db: Session, glucose_reading_id: str, updates: schemas.GlucoseReadingUpdate):
+    db_glucose_reading = (
+        db.query(models.GlucoseReading).filter(models.GlucoseReading.id == glucose_reading_id).first()
+    )
+
+    if not db_glucose_reading:
+        return None
+
+    update_data = updates.model_dump(exclude_unset=True)
+    for field, value in update_data.items():
+        setattr(db_glucose_reading, field, value)
+
     db.commit()
     db.refresh(db_glucose_reading)
     return db_glucose_reading

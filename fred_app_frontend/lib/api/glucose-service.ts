@@ -7,6 +7,13 @@ export interface CreateGlucoseReadingData {
   protocol?: string
   notes?: string
   date?: string
+  insulin_dose?: number | null
+}
+
+export interface UpdateGlucoseReadingData {
+  insulin_dose?: number | null
+  protocol?: string | null
+  notes?: string | null
 }
 
 class GlucoseService {
@@ -22,6 +29,10 @@ class GlucoseService {
     }
     const endpoint = `${API_ENDPOINTS.glucose}?pet_id=${petId}`
     return apiClient.post<GlucoseReading>(endpoint, payload)
+  }
+
+  async updateGlucoseReading(id: string, data: UpdateGlucoseReadingData): Promise<GlucoseReading> {
+    return apiClient.patch<GlucoseReading>(`${API_ENDPOINTS.glucose}/${id}`, data)
   }
 
   async deleteGlucoseReading(id: string): Promise<void> {

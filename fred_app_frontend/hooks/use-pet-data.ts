@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import { routineService, CreateRoutineItemData, UpdateRoutineItemData } from "@/lib/api/routine-service"
 import { routineTemplateService, RoutineTemplate, CreateRoutineTemplateData, UpdateRoutineTemplateData } from "@/lib/api/routine-template-service"
-import { glucoseService, CreateGlucoseReadingData } from "@/lib/api/glucose-service"
+import { glucoseService, UpdateGlucoseReadingData } from "@/lib/api/glucose-service"
 import { moodService, CreateMoodEntryData } from "@/lib/api/mood-service"
 import { petService, CreatePetData } from "@/lib/api/pet-service"
 import { RoutineItem, GlucoseReading, MoodEntry, Pet } from "@/types"
@@ -262,6 +262,16 @@ export function usePetData() {
     }
   }
 
+  const updateGlucoseReading = async (id: string, updates: UpdateGlucoseReadingData) => {
+    try {
+      await glucoseService.updateGlucoseReading(id, updates)
+      await loadGlucoseReadings()
+    } catch (error) {
+      console.error("Error updating glucose reading:", error)
+      throw error
+    }
+  }
+
   // Mood functions
   const addMoodEntry = async (entry: {
     energy_level: "alta" | "media" | "baixa"
@@ -302,6 +312,7 @@ export function usePetData() {
     addRoutineItem,
     deleteRoutineItem,
     addGlucoseReading,
+    updateGlucoseReading,
     addMoodEntry,
     
     // Template actions

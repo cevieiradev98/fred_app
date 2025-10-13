@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
+import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import {
   Dialog,
@@ -29,9 +30,10 @@ import {
   Gauge,
   TrendingDown,
   TrendingUp,
+  Syringe,
 } from "lucide-react"
 import { usePetData } from "@/hooks/use-pet-data"
-import { RoutineItem } from "@/types"
+import { RoutineItem, GlucoseReading } from "@/types"
 import { PWAInstall } from "@/components/pwa-install"
 import { OfflineIndicator } from "@/components/offline-indicator"
 import { ToastContainer, toast } from "@/components/ui/toast"
@@ -74,6 +76,7 @@ export default function FredCareApp() {
     addRoutineItem,
     deleteRoutineItem,
     addGlucoseReading,
+    updateGlucoseReading,
     addMoodEntry,
     refreshData,
   } = usePetData()
@@ -393,6 +396,69 @@ export default function FredCareApp() {
         date: new Date(reading.created_at).toLocaleDateString("pt-BR"),
       }))
 
+    const [selectedReading, setSelectedReading] = useState<GlucoseReading | null>(null)
+    const [isInsulinModalOpen, setIsInsulinModalOpen] = useState(false)
+    const [insulinInput, setInsulinInput] = useState("")
+    const [isSavingInsulin, setIsSavingInsulin] = useState(false)
+
+    const handleCardClick = (reading: GlucoseReading) => {
+      setSelectedReading(reading)
+      setInsulinInput(
+        reading.insulin_dose !== null && reading.insulin_dose !== undefined ? reading.insulin_dose.toString() : ""
+      )
+      setIsInsulinModalOpen(true)
+    }
+
+    const handleCloseInsulinModal = (open: boolean) => {
+      setIsInsulinModalOpen(open)
+      if (!open) {
+        setSelectedReading(null)
+        setInsulinInput("")
+        setIsSavingInsulin(false)
+      }
+    }
+
+    const handleInsulinSave = async () => {
+      if (!selectedReading) return
+
+      const trimmed = insulinInput.trim()
+      let insulinValue: number | null = null
+
+      if (trimmed !== "") {
+        const normalized = trimmed.replace(",", ".")
+        const parsed = Number.parseFloat(normalized)
+
+        if (Number.isNaN(parsed)) {
+          toast.error("Informe um número válido para a dose de insulina")
+          return
+        }
+
+        if (parsed < 0) {
+          toast.error("A dose de insulina não pode ser negativa")
+          return
+        }
+
+        if (parsed > 100) {
+          toast.error("A dose de insulina parece muito alta. Verifique o valor informado.")
+          return
+        }
+
+        insulinValue = Number.parseFloat(parsed.toFixed(2))
+      }
+
+      try {
+        setIsSavingInsulin(true)
+        await updateGlucoseReading(selectedReading.id, { insulin_dose: insulinValue })
+        toast.success(insulinValue !== null ? "Dose de insulina registrada!" : "Dose de insulina removida!")
+        handleCloseInsulinModal(false)
+      } catch (error) {
+        console.error(error)
+        toast.error("Não foi possível salvar a dose de insulina. Tente novamente.")
+      } finally {
+        setIsSavingInsulin(false)
+      }
+    }
+
     return (
       <div className="space-y-6 pb-20">
         <GlucoseRegistrationCard />
@@ -512,27 +578,144 @@ export default function FredCareApp() {
         )}
 
         <div className="space-y-3">
-          {glucoseReadings.slice(0, 5).map((reading) => (
-            <Card key={reading.id}>
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-2xl font-bold">{reading.value} mg/dL</p>
-                    <p className="text-sm text-muted-foreground">
-                      {new Date(reading.created_at).toLocaleString("pt-BR")}
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm">
-                      {TIME_OF_DAY_LABELS[reading.time_of_day] ?? reading.time_of_day}
-                    </p>
-                  </div>
-                </div>
-                {reading.protocol && <p className="text-sm mt-2 p-2 bg-muted rounded">{reading.protocol}</p>}
+          {glucoseReadings.length === 0 ? (
+            <Card>
+              <CardContent className="p-6 text-center text-sm text-muted-foreground">
+                Nenhum registro de glicemia encontrado. Adicione uma nova medição para começar.
               </CardContent>
             </Card>
-          ))}
+          ) : (
+            <div className="grid gap-3 sm:grid-cols-2">
+              {glucoseReadings.map((reading) => (
+                <Card
+                  key={reading.id}
+                  onClick={() => handleCardClick(reading)}
+                  role="button"
+                  aria-label={`Registrar insulina para glicemia de ${reading.value} mg/dL`}
+                  className="group cursor-pointer border border-blue-100/80 bg-gradient-to-br from-white via-blue-50/60 to-blue-100/30 transition-all hover:-translate-y-0.5 hover:border-blue-400 hover:shadow-md dark:border-slate-700 dark:from-slate-950 dark:via-slate-900 dark:to-slate-800"
+                >
+                  <CardContent className="flex h-full flex-col justify-between gap-4 p-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Glicemia</p>
+                        <p className="text-3xl font-bold text-blue-600 dark:text-blue-400">
+                          {reading.value}
+                          <span className="ml-1 text-sm font-semibold text-muted-foreground">mg/dL</span>
+                        </p>
+                      </div>
+                      {reading.insulin_dose !== null && reading.insulin_dose !== undefined ? (
+                        <Badge className="gap-1 bg-blue-600/15 text-blue-700 hover:bg-blue-600/25 dark:bg-blue-500/15 dark:text-blue-200">
+                          <Syringe className="h-3.5 w-3.5" />
+                          {reading.insulin_dose} U
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="gap-1 border-dashed text-muted-foreground">
+                          <Syringe className="h-3.5 w-3.5" />
+                          Sem dose
+                        </Badge>
+                      )}
+                    </div>
+
+                    <div className="space-y-2 text-sm text-muted-foreground">
+                      <div className="flex items-center gap-2">
+                        <Clock className="h-4 w-4" />
+                        <span>{new Date(reading.created_at).toLocaleString("pt-BR")}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-foreground">
+                        <Droplets className="h-4 w-4 text-blue-500 dark:text-blue-300" />
+                        <span>{TIME_OF_DAY_LABELS[reading.time_of_day] ?? reading.time_of_day}</span>
+                      </div>
+                    </div>
+
+                    {reading.protocol && (
+                      <p className="rounded-md bg-blue-50 p-3 text-xs text-blue-700 shadow-sm group-hover:bg-blue-100 dark:bg-slate-800 dark:text-blue-200 dark:group-hover:bg-slate-700">
+                        {reading.protocol}
+                      </p>
+                    )}
+
+                    <p className="flex items-center gap-2 text-xs font-medium text-blue-600 transition-colors group-hover:text-blue-700 dark:text-blue-300">
+                      <Syringe className="h-3 w-3" />
+                      {reading.insulin_dose !== null && reading.insulin_dose !== undefined
+                        ? "Editar dose registrada"
+                        : "Adicionar dose de insulina"}
+                    </p>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
         </div>
+
+        <Dialog open={isInsulinModalOpen} onOpenChange={handleCloseInsulinModal}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Registrar insulina aplicada</DialogTitle>
+              <DialogDescription>
+                {selectedReading
+                  ? `Informe a dose de insulina aplicada para a medição de ${selectedReading.value} mg/dL.`
+                  : "Informe a dose de insulina aplicada para esta medição."}
+              </DialogDescription>
+            </DialogHeader>
+
+            {selectedReading && (
+              <div className="space-y-5">
+                <div className="rounded-md border border-dashed border-blue-200 bg-blue-50/60 p-3 text-sm dark:border-slate-700 dark:bg-slate-900/80">
+                  <div className="flex items-center justify-between">
+                    <span className="font-semibold text-blue-700 dark:text-blue-200">
+                      {selectedReading.value} mg/dL
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      {TIME_OF_DAY_LABELS[selectedReading.time_of_day] ?? selectedReading.time_of_day}
+                    </span>
+                  </div>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {new Date(selectedReading.created_at).toLocaleString("pt-BR")}
+                  </p>
+                  {selectedReading.protocol && (
+                    <p className="mt-2 rounded bg-white/60 p-2 text-xs text-blue-700 dark:bg-slate-800 dark:text-blue-200">
+                      {selectedReading.protocol}
+                    </p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <label htmlFor="insulin-dose" className="text-sm font-medium">
+                    Dose aplicada (unidades)
+                  </label>
+                  <input
+                    id="insulin-dose"
+                    type="number"
+                    inputMode="decimal"
+                    min="0"
+                    max="100"
+                    step="0.1"
+                    value={insulinInput}
+                    onChange={(e) => setInsulinInput(e.target.value)}
+                    placeholder="Ex: 2.5"
+                    className="w-full rounded-md border px-3 py-2 text-sm shadow-sm focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500/40 dark:border-slate-700 dark:bg-slate-900"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Deixe em branco caso não tenha sido aplicada insulina nesta medição.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            <DialogFooter className="gap-2 sm:justify-end">
+              <Button
+                variant="outline"
+                onClick={() => handleCloseInsulinModal(false)}
+                disabled={isSavingInsulin}
+                className="sm:w-auto"
+              >
+                Cancelar
+              </Button>
+              <Button onClick={handleInsulinSave} disabled={isSavingInsulin} className="sm:w-auto">
+                {isSavingInsulin ? "Salvando..." : "Salvar dose"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     )
   }

@@ -82,6 +82,7 @@ class GlucoseReadingBase(BaseModel):
     protocol: Optional[str] = None
     notes: Optional[str] = None
     date: Optional[str] = None
+    insulin_dose: Optional[float] = None
 
 
 class GlucoseReadingCreate(BaseModel):
@@ -89,6 +90,13 @@ class GlucoseReadingCreate(BaseModel):
     protocol: Optional[str] = None
     notes: Optional[str] = None
     date: Optional[str] = None
+    insulin_dose: Optional[float] = None
+
+
+class GlucoseReadingUpdate(BaseModel):
+    insulin_dose: Optional[float] = None
+    protocol: Optional[str] = None
+    notes: Optional[str] = None
 
 
 class GlucoseReading(GlucoseReadingBase):

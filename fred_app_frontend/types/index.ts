@@ -26,6 +26,7 @@ export interface GlucoseReading {
   time_of_day: string
   protocol?: string
   notes?: string
+  insulin_dose?: number | null
   date: string
   created_at: string
 }
