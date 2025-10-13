@@ -37,6 +37,7 @@ import { OfflineIndicator } from "@/components/offline-indicator"
 import { ToastContainer, toast } from "@/components/ui/toast"
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, ReferenceLine } from "recharts"
+import { ThemeToggle } from "@/components/theme-toggle"
 
 interface GlicemiaRecord {
   id: string
@@ -774,7 +775,7 @@ export default function FredCareApp() {
       <OfflineIndicator />
       <ToastContainer />
 
-      <header className="fixed top-0 left-0 right-0 bg-white border-b border-border z-40 safe-area-inset-top">
+      <header className="fixed top-0 left-0 right-0 bg-background border-b border-border z-40 safe-area-inset-top">
         <div className="flex items-center gap-3 p-4">
           <Avatar className="h-10 w-10">
             <AvatarImage src="/fred.jpg" alt="Fred" />
@@ -784,17 +785,20 @@ export default function FredCareApp() {
             <h1 className="text-lg font-bold">Fred Care</h1>
             <p className="text-xs text-muted-foreground">Cuidados Diabéticos</p>
           </div>
-          <div className="flex items-center gap-1">
-            <div
-              className={`w-2 h-2 rounded-full ${
-                completedTasks === routineItems.length
-                  ? "bg-green-500"
-                  : completedTasks > 0
-                    ? "bg-yellow-500"
-                    : "bg-gray-300"
-              }`}
-            />
-            <span className="text-xs text-muted-foreground">{Math.round(progressPercentage)}%</span>
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1">
+              <div
+                className={`w-2 h-2 rounded-full ${
+                  completedTasks === routineItems.length
+                    ? "bg-green-500"
+                    : completedTasks > 0
+                      ? "bg-yellow-500"
+                      : "bg-gray-300"
+                }`}
+              />
+              <span className="text-xs text-muted-foreground">{Math.round(progressPercentage)}%</span>
+            </div>
+            <ThemeToggle />
           </div>
         </div>
       </header>
@@ -812,7 +816,7 @@ export default function FredCareApp() {
         {currentTab === "historico" && <HistoricoPage />}
       </main>
 
-      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-border z-40 safe-area-inset-bottom">
+      <nav className="fixed bottom-0 left-0 right-0 bg-background border-t border-border z-40 safe-area-inset-bottom">
         <div className="flex">
           <button
             onClick={() => setCurrentTab("inicio")}
