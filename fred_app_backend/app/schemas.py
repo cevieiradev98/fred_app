@@ -131,6 +131,82 @@ class MoodEntry(MoodEntryBase):
         from_attributes = True
 
 
+class WalkPauseSegment(BaseModel):
+    started_at: datetime
+    ended_at: Optional[datetime] = None
+
+
+class WalkEntryBase(BaseModel):
+    start_time: datetime
+    end_time: Optional[datetime] = None
+    duration_seconds: Optional[int] = None
+    pause_events: Optional[List[WalkPauseSegment]] = None
+    energy_level: Optional[str] = None  # very-low, low, moderate, high, very-high
+    behavior: Optional[List[str]] = None
+    completed_route: Optional[bool] = True
+    pee_count: Optional[str] = None  # none, 1x, 2x, 3x-plus
+    pee_volume: Optional[str] = None  # low, normal, high
+    pee_color: Optional[str] = None  # normal, dark, blood
+    poop_made: Optional[bool] = None
+    poop_consistency: Optional[str] = None  # hard, normal, soft, diarrhea
+    poop_blood: Optional[bool] = None
+    poop_mucus: Optional[bool] = None
+    poop_color: Optional[str] = None
+    photos: Optional[List[str]] = None
+    weather: Optional[str] = None
+    temperature_celsius: Optional[float] = None
+    route_distance_km: Optional[float] = None
+    route_description: Optional[str] = None
+    mobility_notes: Optional[str] = None
+    disorientation: Optional[bool] = None
+    excessive_panting: Optional[bool] = None
+    cough: Optional[bool] = None
+    notes: Optional[str] = None
+    alerts: Optional[List[str]] = None
+    date: Optional[str] = None
+
+
+class WalkEntryCreate(WalkEntryBase):
+    pass
+
+
+class WalkEntryUpdate(BaseModel):
+    end_time: Optional[datetime] = None
+    duration_seconds: Optional[int] = None
+    pause_events: Optional[List[WalkPauseSegment]] = None
+    energy_level: Optional[str] = None
+    behavior: Optional[List[str]] = None
+    completed_route: Optional[bool] = None
+    pee_count: Optional[str] = None
+    pee_volume: Optional[str] = None
+    pee_color: Optional[str] = None
+    poop_made: Optional[bool] = None
+    poop_consistency: Optional[str] = None
+    poop_blood: Optional[bool] = None
+    poop_mucus: Optional[bool] = None
+    poop_color: Optional[str] = None
+    photos: Optional[List[str]] = None
+    weather: Optional[str] = None
+    temperature_celsius: Optional[float] = None
+    route_distance_km: Optional[float] = None
+    route_description: Optional[str] = None
+    mobility_notes: Optional[str] = None
+    disorientation: Optional[bool] = None
+    excessive_panting: Optional[bool] = None
+    cough: Optional[bool] = None
+    notes: Optional[str] = None
+    alerts: Optional[List[str]] = None
+
+
+class WalkEntry(WalkEntryBase):
+    id: str
+    date: str
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
 # Error schema
 class ErrorResponse(BaseModel):
     error: str

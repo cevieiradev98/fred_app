@@ -4,7 +4,7 @@ from fastapi.responses import JSONResponse
 
 from app.database import engine
 from app import models
-from app.routers import pets, routine_items, glucose_readings, mood_entries, routine_templates
+from app.routers import pets, routine_items, glucose_readings, mood_entries, routine_templates, walk_entries
 
 # Create database tables
 models.Base.metadata.create_all(bind=engine)
@@ -32,6 +32,7 @@ app.include_router(routine_templates.router, tags=["routine-templates"])
 app.include_router(routine_items.router, tags=["routine-items"])
 app.include_router(glucose_readings.router, tags=["glucose-readings"])
 app.include_router(mood_entries.router, tags=["mood-entries"])
+app.include_router(walk_entries.router, tags=["walk-entries"])
 
 
 @app.exception_handler(HTTPException)

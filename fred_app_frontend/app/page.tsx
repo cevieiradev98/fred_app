@@ -1,10 +1,11 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo, useCallback } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Badge } from "@/components/ui/badge"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Progress } from "@/components/ui/progress"
 import {
   Dialog,
@@ -31,9 +32,29 @@ import {
   TrendingDown,
   TrendingUp,
   Syringe,
+  Footprints,
+  PauseCircle,
+  PlayCircle,
+  StopCircle,
+  Activity,
+  Timer,
+  AlertTriangle,
+  Thermometer,
+  MapPin,
+  CloudSun,
+  Camera,
 } from "lucide-react"
 import { usePetData } from "@/hooks/use-pet-data"
-import { RoutineItem, GlucoseReading } from "@/types"
+import {
+  RoutineItem,
+  GlucoseReading,
+  WalkEntry,
+  WalkEnergyLevel,
+  WalkPeeCount,
+  WalkPeeVolume,
+  WalkPeeColor,
+  WalkPoopConsistency,
+} from "@/types"
 import { PWAInstall } from "@/components/pwa-install"
 import { OfflineIndicator } from "@/components/offline-indicator"
 import { ToastContainer, toast } from "@/components/ui/toast"
@@ -65,12 +86,89 @@ const TIME_OF_DAY_LABELS: Record<string, string> = {
   dawn: "Madrugada",
 }
 
+const WALK_ENERGY_OPTIONS: { value: WalkEnergyLevel; label: string }[] = [
+  { value: "very-low", label: "Muito baixo" },
+  { value: "low", label: "Baixo" },
+  { value: "moderate", label: "Moderado" },
+  { value: "high", label: "Alto" },
+  { value: "very-high", label: "Muito animado" },
+]
+
+const WALK_ENERGY_SCORE: Record<WalkEnergyLevel, number> = {
+  "very-low": 1,
+  low: 2,
+  moderate: 3,
+  high: 4,
+  "very-high": 5,
+}
+
+const WALK_BEHAVIOR_OPTIONS: { value: string; label: string }[] = [
+  { value: "pulling-leash", label: "Puxou a guia" },
+  { value: "steady-pace", label: "Andou no ritmo" },
+  { value: "lagging-behind", label: "Ficou para trás" },
+  { value: "needed-encouragement", label: "Precisou de incentivo" },
+]
+
+const WALK_PEE_COUNT_OPTIONS: { value: WalkPeeCount; label: string }[] = [
+  { value: "none", label: "Não fez" },
+  { value: "1x", label: "1x" },
+  { value: "2x", label: "2x" },
+  { value: "3x-plus", label: "3x ou mais" },
+]
+
+const WALK_PEE_VOLUME_OPTIONS: { value: WalkPeeVolume; label: string }[] = [
+  { value: "low", label: "Pouco" },
+  { value: "normal", label: "Normal" },
+  { value: "high", label: "Muito" },
+]
+
+const WALK_PEE_COLOR_OPTIONS: { value: WalkPeeColor; label: string }[] = [
+  { value: "normal", label: "Normal" },
+  { value: "dark", label: "Escura" },
+  { value: "blood", label: "Com sangue" },
+]
+
+const WALK_POOP_CONSISTENCY_OPTIONS: { value: WalkPoopConsistency; label: string }[] = [
+  { value: "hard", label: "Dura" },
+  { value: "normal", label: "Normal" },
+  { value: "soft", label: "Mole" },
+  { value: "diarrhea", label: "Diarreia" },
+]
+
+const WALK_ENERGY_LABEL_MAP: Record<WalkEnergyLevel, string> = WALK_ENERGY_OPTIONS.reduce(
+  (acc, option) => {
+    acc[option.value] = option.label
+    return acc
+  },
+  {} as Record<WalkEnergyLevel, string>
+)
+
+const WALK_PEE_COUNT_VALUE: Record<WalkPeeCount, number> = {
+  none: 0,
+  "1x": 1,
+  "2x": 2,
+  "3x-plus": 3,
+}
+
+const formatDuration = (totalSeconds: number) => {
+  const hours = Math.floor(totalSeconds / 3600)
+  const minutes = Math.floor((totalSeconds % 3600) / 60)
+  const seconds = totalSeconds % 60
+  if (hours > 0) {
+    return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds
+      .toString()
+      .padStart(2, "0")}`
+  }
+  return `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`
+}
+
 export default function FredCareApp() {
   const {
     routineItems,
     allRoutineItems,
     glucoseReadings,
     moodEntries,
+    walkEntries,
     isLoading,
     toggleRoutineItem,
     addRoutineItem,
@@ -78,10 +176,13 @@ export default function FredCareApp() {
     addGlucoseReading,
     updateGlucoseReading,
     addMoodEntry,
+    createWalkEntry,
+    updateWalkEntry,
+    deleteWalkEntry,
     refreshData,
   } = usePetData()
 
-  const [currentTab, setCurrentTab] = useState<"inicio" | "dashboard" | "glicemia" | "humor" | "historico">("inicio")
+  const [currentTab, setCurrentTab] = useState<"inicio" | "dashboard" | "glicemia" | "humor" | "passeios" | "historico">("inicio")
   const [isAddTaskModalOpen, setIsAddTaskModalOpen] = useState(false)
   const [newTaskTime, setNewTaskTime] = useState("")
   const [newTaskDescription, setNewTaskDescription] = useState("")
@@ -808,6 +909,1251 @@ export default function FredCareApp() {
     )
   }
 
+  const WalksPage = () => {
+    interface WalkFormState {
+      walkId: string
+      energy_level: WalkEnergyLevel | null
+      behavior: string[]
+      completed_route: boolean
+      pee_count: WalkPeeCount | null
+      pee_volume: WalkPeeVolume | null
+      pee_color: WalkPeeColor | null
+      poop_made: boolean
+      poop_consistency: WalkPoopConsistency | null
+      poop_blood: boolean
+      poop_mucus: boolean
+      poop_color: string
+      weather: string
+      temperature_celsius: string
+      route_distance_km: string
+      route_description: string
+      mobility_notes: string
+      disorientation: boolean
+      excessive_panting: boolean
+      cough: boolean
+      notes: string
+      photosText: string
+    }
+
+    const [isFinishModalOpen, setIsFinishModalOpen] = useState(false)
+    const [processingAction, setProcessingAction] = useState<null | "start" | "pause" | "resume" | "finish" | "cancel">(null)
+    const [walkForm, setWalkForm] = useState<WalkFormState | null>(null)
+    const [timerTick, setTimerTick] = useState(() => Date.now())
+    const [lastGeneratedAlerts, setLastGeneratedAlerts] = useState<string[]>([])
+
+    const activeWalk = useMemo(() => {
+      const openWalks = walkEntries.filter((entry) => !entry.end_time)
+      if (openWalks.length === 0) {
+        return null
+      }
+      const sorted = [...openWalks].sort((a, b) => new Date(b.start_time).getTime() - new Date(a.start_time).getTime())
+      return sorted[0]
+    }, [walkEntries])
+
+    const completedWalks = useMemo(() => {
+      const closed = walkEntries.filter((entry) => entry.end_time)
+      return [...closed].sort((a, b) => new Date(b.start_time).getTime() - new Date(a.start_time).getTime())
+    }, [walkEntries])
+
+    const isPaused = useMemo(() => {
+      if (!activeWalk) return false
+      const pauses = activeWalk.pause_events ?? []
+      if (pauses.length === 0) return false
+      const lastPause = pauses[pauses.length - 1]
+      return !lastPause?.ended_at
+    }, [activeWalk])
+
+    const buildWalkFormState = useCallback((entry: WalkEntry): WalkFormState => {
+      return {
+        walkId: entry.id,
+        energy_level: (entry.energy_level as WalkEnergyLevel | null) ?? null,
+        behavior: entry.behavior ? [...entry.behavior] : [],
+        completed_route: entry.completed_route !== false,
+        pee_count: (entry.pee_count as WalkPeeCount | null) ?? null,
+        pee_volume: (entry.pee_volume as WalkPeeVolume | null) ?? null,
+        pee_color: (entry.pee_color as WalkPeeColor | null) ?? null,
+        poop_made: entry.poop_made ?? false,
+        poop_consistency: (entry.poop_consistency as WalkPoopConsistency | null) ?? null,
+        poop_blood: Boolean(entry.poop_blood),
+        poop_mucus: Boolean(entry.poop_mucus),
+        poop_color: entry.poop_color ?? "",
+        weather: entry.weather ?? "",
+        temperature_celsius:
+          entry.temperature_celsius !== null && entry.temperature_celsius !== undefined ? String(entry.temperature_celsius) : "",
+        route_distance_km:
+          entry.route_distance_km !== null && entry.route_distance_km !== undefined ? String(entry.route_distance_km) : "",
+        route_description: entry.route_description ?? "",
+        mobility_notes: entry.mobility_notes ?? "",
+        disorientation: Boolean(entry.disorientation),
+        excessive_panting: Boolean(entry.excessive_panting),
+        cough: Boolean(entry.cough),
+        notes: entry.notes ?? "",
+        photosText: entry.photos?.join("\n") ?? "",
+      }
+    }, [])
+
+    useEffect(() => {
+      if (!activeWalk) {
+        setWalkForm(null)
+        return
+      }
+      const interval = window.setInterval(() => setTimerTick(Date.now()), 1000)
+      return () => window.clearInterval(interval)
+    }, [activeWalk, isPaused])
+
+    useEffect(() => {
+      if (!activeWalk) {
+        setWalkForm(null)
+        return
+      }
+      setWalkForm((prev) => {
+        if (prev && prev.walkId === activeWalk.id) {
+          return prev
+        }
+        setLastGeneratedAlerts([])
+        return buildWalkFormState(activeWalk)
+      })
+    }, [activeWalk, buildWalkFormState])
+
+    const computeElapsedSeconds = useCallback(
+      (entry: WalkEntry, referenceTime?: number) => {
+        const startTimestamp = new Date(entry.start_time).getTime()
+        if (!Number.isFinite(startTimestamp)) {
+          return 0
+        }
+        const reference = referenceTime ?? timerTick
+        const endTimestamp = entry.end_time ? new Date(entry.end_time).getTime() : reference
+        const effectiveEnd = Number.isFinite(endTimestamp) ? endTimestamp : reference
+        const pauses = entry.pause_events ?? []
+        const pausedMs = pauses.reduce((acc, pause) => {
+          if (!pause?.started_at) return acc
+          const pauseStart = new Date(pause.started_at).getTime()
+          if (!Number.isFinite(pauseStart)) return acc
+          const pauseEndRaw = pause.ended_at ? new Date(pause.ended_at).getTime() : reference
+          if (!Number.isFinite(pauseEndRaw) || pauseEndRaw < pauseStart) return acc
+          return acc + (pauseEndRaw - pauseStart)
+        }, 0)
+        const elapsedMs = Math.max(0, effectiveEnd - startTimestamp - pausedMs)
+        return Math.round(elapsedMs / 1000)
+      },
+      [timerTick]
+    )
+
+    const activeElapsedSeconds = activeWalk ? computeElapsedSeconds(activeWalk) : 0
+
+    const setFormField = useCallback(
+      <K extends keyof WalkFormState>(field: K, value: WalkFormState[K]) => {
+        setWalkForm((prev) => (prev ? { ...prev, [field]: value } : prev))
+      },
+      []
+    )
+
+    const handleToggleBehavior = useCallback((value: string) => {
+      setWalkForm((prev) => {
+        if (!prev) return prev
+        const alreadySelected = prev.behavior.includes(value)
+        const nextBehavior = alreadySelected ? prev.behavior.filter((item) => item !== value) : [...prev.behavior, value]
+        return { ...prev, behavior: nextBehavior }
+      })
+    }, [])
+
+    const getBehaviorLabel = useCallback((value: string) => {
+      const option = WALK_BEHAVIOR_OPTIONS.find((item) => item.value === value)
+      return option ? option.label : value
+    }, [])
+
+    const formatPeeSummary = useCallback((entry: WalkEntry) => {
+      if (!entry.pee_count) return "Não informado"
+      const countLabel = WALK_PEE_COUNT_OPTIONS.find((option) => option.value === entry.pee_count)?.label ?? entry.pee_count
+      const pieces = [countLabel]
+      if (entry.pee_volume) {
+        pieces.push(WALK_PEE_VOLUME_OPTIONS.find((option) => option.value === entry.pee_volume)?.label ?? entry.pee_volume)
+      }
+      if (entry.pee_color && entry.pee_color !== "normal") {
+        pieces.push(WALK_PEE_COLOR_OPTIONS.find((option) => option.value === entry.pee_color)?.label ?? entry.pee_color)
+      }
+      return pieces.join(" • ")
+    }, [])
+
+    const formatPoopSummary = useCallback((entry: WalkEntry) => {
+      if (!entry.poop_made) return "Não fez"
+      const pieces: string[] = []
+      if (entry.poop_consistency) {
+        pieces.push(
+          WALK_POOP_CONSISTENCY_OPTIONS.find((option) => option.value === entry.poop_consistency)?.label ?? entry.poop_consistency
+        )
+      }
+      const flags: string[] = []
+      if (entry.poop_blood) flags.push("sangue")
+      if (entry.poop_mucus) flags.push("muco")
+      if (flags.length) {
+        pieces.push(flags.join(" e "))
+      }
+      return pieces.join(" • ") || "Fez"
+    }, [])
+
+    const computeAlertMessages = useCallback(
+      (entry: WalkEntry, history: WalkEntry[]) => {
+        const messages = new Set<string>()
+
+        const entryPeeValue =
+          entry.pee_count && entry.pee_count in WALK_PEE_COUNT_VALUE
+            ? WALK_PEE_COUNT_VALUE[entry.pee_count as WalkPeeCount]
+            : null
+        const historyPeeValues = history
+          .map((item) =>
+            item.pee_count && item.pee_count in WALK_PEE_COUNT_VALUE
+              ? WALK_PEE_COUNT_VALUE[item.pee_count as WalkPeeCount]
+              : null
+          )
+          .filter((value): value is number => value !== null)
+
+        if (entryPeeValue !== null && historyPeeValues.length) {
+          const avgPee = historyPeeValues.reduce((acc, value) => acc + value, 0) / historyPeeValues.length
+          if (avgPee > 0 && entryPeeValue < avgPee) {
+            const diffPercent = Math.round(((avgPee - entryPeeValue) / avgPee) * 100)
+            if (diffPercent >= 30) {
+              messages.add("Xixi 30% abaixo do padrão recente.")
+            } else if (avgPee - entryPeeValue >= 1) {
+              messages.add("Menor frequência de xixi que o habitual.")
+            }
+          }
+        } else if (entryPeeValue === 0 && historyPeeValues.length && historyPeeValues.every((value) => value > 0)) {
+          messages.add("Sem xixi neste passeio, diferente dos anteriores.")
+        }
+
+        if (entry.pee_color === "blood") {
+          messages.add("Sangue no xixi: acompanhe e contate o veterinário se persistir.")
+        } else if (entry.pee_color === "dark") {
+          messages.add("Xixi mais escuro que o normal.")
+        }
+
+        const entryEnergyScore =
+          entry.energy_level && entry.energy_level in WALK_ENERGY_SCORE
+            ? WALK_ENERGY_SCORE[entry.energy_level as WalkEnergyLevel]
+            : null
+        const historyEnergyScores = history
+          .map((item) =>
+            item.energy_level && item.energy_level in WALK_ENERGY_SCORE
+              ? WALK_ENERGY_SCORE[item.energy_level as WalkEnergyLevel]
+              : null
+          )
+          .filter((value): value is number => value !== null)
+
+        if (entryEnergyScore !== null && historyEnergyScores.length) {
+          const avgEnergy = historyEnergyScores.reduce((acc, value) => acc + value, 0) / historyEnergyScores.length
+          if (avgEnergy > 0 && entryEnergyScore < avgEnergy) {
+            const diffPercent = Math.round(((avgEnergy - entryEnergyScore) / avgEnergy) * 100)
+            if (diffPercent >= 30) {
+              messages.add("Energia abaixo do padrão dos últimos passeios.")
+            } else if (avgEnergy - entryEnergyScore >= 1.5) {
+              messages.add("Queda relevante de energia registrada.")
+            }
+          }
+        }
+
+        const entryDuration =
+          entry.duration_seconds !== undefined && entry.duration_seconds !== null
+            ? entry.duration_seconds
+            : entry.end_time
+              ? computeElapsedSeconds(entry, new Date(entry.end_time).getTime())
+              : null
+        const historyDurations = history
+          .map((item) =>
+            item.duration_seconds !== undefined && item.duration_seconds !== null
+              ? item.duration_seconds
+              : item.end_time
+                ? computeElapsedSeconds(item, new Date(item.end_time).getTime())
+                : null
+          )
+          .filter((value): value is number => value !== null)
+
+        if (entryDuration !== null && historyDurations.length) {
+          const avgDuration = historyDurations.reduce((acc, value) => acc + value, 0) / historyDurations.length
+          if (avgDuration > 0 && entryDuration < avgDuration * 0.7) {
+            messages.add("Passeio mais curto que o habitual.")
+          }
+        }
+
+        if (entry.completed_route === false) {
+          messages.add("Percurso habitual não foi concluído.")
+        }
+
+        if (entry.poop_blood) {
+          messages.add("Sangue nas fezes: monitore e acione o veterinário se persistir.")
+        }
+        if (entry.poop_mucus) {
+          messages.add("Muco nas fezes percebido.")
+        }
+        if (entry.poop_consistency === "diarrhea") {
+          messages.add("Fezes diarreicas registradas.")
+        }
+
+        if (entry.disorientation) {
+          messages.add("Sinais de desorientação durante o passeio.")
+        }
+        if (entry.excessive_panting) {
+          messages.add("Ofegância acima do normal.")
+        }
+        if (entry.cough) {
+          messages.add("Tosse observada durante o passeio.")
+        }
+        if (entry.mobility_notes) {
+          messages.add("Dificuldades de mobilidade relatadas.")
+        }
+
+        if (entry.temperature_celsius !== null && entry.temperature_celsius !== undefined && entry.temperature_celsius >= 30) {
+          messages.add("Temperatura alta: redobre a hidratação.")
+        }
+
+        if (entry.alerts && entry.alerts.length) {
+          entry.alerts.forEach((message) => messages.add(message))
+        }
+
+        return Array.from(messages)
+      },
+      [computeElapsedSeconds]
+    )
+
+    const latestCompletedWalk = completedWalks[0] ?? null
+    const historyWithoutLatest = useMemo(
+      () => (latestCompletedWalk ? completedWalks.slice(1, 8) : completedWalks.slice(0, 7)),
+      [completedWalks, latestCompletedWalk]
+    )
+
+    const summaryAlerts = useMemo(() => {
+      if (!latestCompletedWalk) return []
+      return computeAlertMessages(latestCompletedWalk, historyWithoutLatest)
+    }, [computeAlertMessages, latestCompletedWalk, historyWithoutLatest])
+
+    const weeklySnapshot = useMemo(() => {
+      const now = Date.now()
+      const sevenDaysAgo = now - 7 * 24 * 60 * 60 * 1000
+      const recent = completedWalks.filter((entry) => new Date(entry.start_time).getTime() >= sevenDaysAgo)
+      if (recent.length === 0) {
+        return {
+          total: 0,
+          avgDurationMinutes: 0,
+          avgEnergyLabel: null as string | null,
+          peeAverageLabel: null as string | null,
+          poopRate: 0,
+        }
+      }
+
+      const durations = recent.map((entry) => {
+        if (typeof entry.duration_seconds === "number" && !Number.isNaN(entry.duration_seconds)) {
+          return entry.duration_seconds
+        }
+        if (entry.end_time) {
+          return computeElapsedSeconds(entry, new Date(entry.end_time).getTime())
+        }
+        return 0
+      })
+      const avgDuration = durations.reduce((acc, value) => acc + value, 0) / durations.length
+
+      const energyValues = recent
+        .map((entry) =>
+          entry.energy_level && entry.energy_level in WALK_ENERGY_SCORE
+            ? WALK_ENERGY_SCORE[entry.energy_level as WalkEnergyLevel]
+            : null
+        )
+        .filter((value): value is number => value !== null)
+      let avgEnergyLabel: string | null = null
+      if (energyValues.length) {
+        const avgEnergy = energyValues.reduce((acc, value) => acc + value, 0) / energyValues.length
+        const closest = WALK_ENERGY_OPTIONS.reduce((best, option) => {
+          const diffCurrent = Math.abs(WALK_ENERGY_SCORE[option.value] - avgEnergy)
+          const diffBest = Math.abs(WALK_ENERGY_SCORE[best.value] - avgEnergy)
+          return diffCurrent < diffBest ? option : best
+        }, WALK_ENERGY_OPTIONS[0])
+        avgEnergyLabel = closest.label
+      }
+
+      const peeValues = recent
+        .map((entry) =>
+          entry.pee_count && entry.pee_count in WALK_PEE_COUNT_VALUE
+            ? WALK_PEE_COUNT_VALUE[entry.pee_count as WalkPeeCount]
+            : null
+        )
+        .filter((value): value is number => value !== null)
+      let peeAverageLabel: string | null = null
+      if (peeValues.length) {
+        const avgPee = peeValues.reduce((acc, value) => acc + value, 0) / peeValues.length
+        if (avgPee === 0) peeAverageLabel = "Sem xixi"
+        else if (avgPee < 1.5) peeAverageLabel = "1x em média"
+        else if (avgPee < 2.5) peeAverageLabel = "2x em média"
+        else peeAverageLabel = "3x ou mais"
+      }
+
+      const poopCount = recent.filter((entry) => entry.poop_made).length
+      const poopRate = Math.round((poopCount / recent.length) * 100)
+
+      return {
+        total: recent.length,
+        avgDurationMinutes: Math.round(avgDuration / 60),
+        avgEnergyLabel,
+        peeAverageLabel,
+        poopRate,
+      }
+    }, [completedWalks, computeElapsedSeconds])
+
+    const energyTrendData = useMemo(() => {
+      return completedWalks
+        .filter((entry) => entry.energy_level && entry.energy_level in WALK_ENERGY_SCORE)
+        .slice(0, 10)
+        .reverse()
+        .map((entry) => {
+          const label = new Date(entry.start_time)
+            .toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })
+            .replace(".", "")
+          return {
+            label,
+            energy: WALK_ENERGY_SCORE[entry.energy_level as WalkEnergyLevel],
+            energyText: WALK_ENERGY_LABEL_MAP[entry.energy_level as WalkEnergyLevel],
+          }
+        })
+    }, [completedWalks])
+
+    const lastWalks = useMemo(() => completedWalks.slice(0, 5), [completedWalks])
+
+    const missingFields = useMemo(() => {
+      if (!walkForm) return []
+      const missing: string[] = []
+      if (!walkForm.energy_level) missing.push("nível de energia")
+      if (walkForm.behavior.length === 0) missing.push("comportamento")
+      if (!walkForm.pee_count) missing.push("registro de xixi")
+      if (walkForm.poop_made && !walkForm.poop_consistency) missing.push("consistência do cocô")
+      return missing
+    }, [walkForm])
+
+    const handleStartWalk = async () => {
+      setProcessingAction("start")
+      try {
+        const now = new Date().toISOString()
+        await createWalkEntry({
+          start_time: now,
+          pause_events: [],
+          completed_route: true,
+          alerts: [],
+        })
+        toast.success("Passeio iniciado! Boa caminhada 🐾")
+      } catch (error) {
+        console.error(error)
+        toast.error("Não foi possível iniciar o passeio.")
+      } finally {
+        setProcessingAction(null)
+      }
+    }
+
+    const handlePauseResume = async () => {
+      if (!activeWalk) return
+      const action = isPaused ? "resume" : "pause"
+      setProcessingAction(action)
+      try {
+        const now = new Date().toISOString()
+        const events = [...(activeWalk.pause_events ?? [])]
+        if (isPaused) {
+          if (events.length === 0) {
+            toast.error("Nenhuma pausa ativa para retomar.")
+            return
+          }
+          events[events.length - 1] = {
+            ...events[events.length - 1],
+            ended_at: now,
+          }
+        } else {
+          events.push({
+            started_at: now,
+            ended_at: null,
+          })
+        }
+        await updateWalkEntry(activeWalk.id, { pause_events: events })
+        toast.success(isPaused ? "Passeio retomado!" : "Passeio pausado.")
+      } catch (error) {
+        console.error(error)
+        toast.error("Não foi possível atualizar o passeio.")
+      } finally {
+        setProcessingAction(null)
+      }
+    }
+
+    const handleCancelWalk = async () => {
+      if (!activeWalk) return
+      const confirmCancel = window.confirm("Deseja cancelar o passeio em andamento? Os dados atuais serão descartados.")
+      if (!confirmCancel) return
+      setProcessingAction("cancel")
+      try {
+        await deleteWalkEntry(activeWalk.id)
+        setWalkForm(null)
+        toast.success("Passeio cancelado.")
+      } catch (error) {
+        console.error(error)
+        toast.error("Não foi possível cancelar o passeio.")
+      } finally {
+        setProcessingAction(null)
+      }
+    }
+
+    const handleFinishSubmit = async () => {
+      if (!activeWalk || !walkForm) return
+
+      if (missingFields.length) {
+        toast.error(`Complete: ${missingFields.join(", ")}`)
+        return
+      }
+
+      setProcessingAction("finish")
+      try {
+        const now = new Date().toISOString()
+        const durationSeconds = computeElapsedSeconds(activeWalk, Date.now())
+
+        const temperatureParsed =
+          walkForm.temperature_celsius.trim() !== ""
+            ? Number.parseFloat(walkForm.temperature_celsius.replace(",", "."))
+            : null
+        const temperatureValue =
+          temperatureParsed !== null && Number.isFinite(temperatureParsed) ? temperatureParsed : null
+
+        const distanceParsed =
+          walkForm.route_distance_km.trim() !== ""
+            ? Number.parseFloat(walkForm.route_distance_km.replace(",", "."))
+            : null
+        const distanceValue = distanceParsed !== null && Number.isFinite(distanceParsed) ? distanceParsed : null
+
+        const photos = walkForm.photosText
+          .split("\n")
+          .map((value) => value.trim())
+          .filter((value) => value.length > 0)
+
+        const entrySnapshot: WalkEntry = {
+          ...activeWalk,
+          end_time: now,
+          duration_seconds: durationSeconds,
+          energy_level: walkForm.energy_level,
+          behavior: walkForm.behavior,
+          completed_route: walkForm.completed_route,
+          pee_count: walkForm.pee_count,
+          pee_volume: walkForm.pee_volume,
+          pee_color: walkForm.pee_color,
+          poop_made: walkForm.poop_made,
+          poop_consistency: walkForm.poop_consistency,
+          poop_blood: walkForm.poop_blood,
+          poop_mucus: walkForm.poop_mucus,
+          poop_color: walkForm.poop_color || null,
+          weather: walkForm.weather || null,
+          temperature_celsius: temperatureValue,
+          route_distance_km: distanceValue,
+          route_description: walkForm.route_description || null,
+          mobility_notes: walkForm.mobility_notes || null,
+          disorientation: walkForm.disorientation,
+          excessive_panting: walkForm.excessive_panting,
+          cough: walkForm.cough,
+          notes: walkForm.notes || null,
+          photos: photos.length ? photos : null,
+          alerts: activeWalk.alerts ?? null,
+        }
+
+        const alerts = computeAlertMessages(
+          entrySnapshot,
+          completedWalks.filter((entry) => entry.id !== activeWalk.id)
+        )
+        entrySnapshot.alerts = alerts
+
+        const payload: UpdateWalkEntryData = {
+          end_time: entrySnapshot.end_time,
+          duration_seconds: entrySnapshot.duration_seconds,
+          energy_level: entrySnapshot.energy_level,
+          behavior: entrySnapshot.behavior,
+          completed_route: entrySnapshot.completed_route,
+          pee_count: entrySnapshot.pee_count,
+          pee_volume: entrySnapshot.pee_volume,
+          pee_color: entrySnapshot.pee_color,
+          poop_made: entrySnapshot.poop_made,
+          poop_consistency: entrySnapshot.poop_consistency,
+          poop_blood: entrySnapshot.poop_blood,
+          poop_mucus: entrySnapshot.poop_mucus,
+          poop_color: entrySnapshot.poop_color,
+          weather: entrySnapshot.weather,
+          temperature_celsius: entrySnapshot.temperature_celsius,
+          route_distance_km: entrySnapshot.route_distance_km,
+          route_description: entrySnapshot.route_description,
+          mobility_notes: entrySnapshot.mobility_notes,
+          disorientation: entrySnapshot.disorientation,
+          excessive_panting: entrySnapshot.excessive_panting,
+          cough: entrySnapshot.cough,
+          notes: entrySnapshot.notes,
+          photos: entrySnapshot.photos,
+          alerts,
+        }
+
+        await updateWalkEntry(activeWalk.id, payload)
+        setIsFinishModalOpen(false)
+        setWalkForm(null)
+        setLastGeneratedAlerts(alerts)
+        toast.success(alerts.length ? "Passeio registrado com alertas importantes." : "Passeio registrado com sucesso!")
+      } catch (error) {
+        console.error(error)
+        toast.error("Não foi possível finalizar o passeio.")
+      } finally {
+        setProcessingAction(null)
+      }
+    }
+
+    return (
+      <div className="space-y-6 pb-24">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <Footprints className="h-5 w-5" />
+              Passeios monitorados
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div>
+                <p className="text-sm text-muted-foreground">Status</p>
+                <p className="text-xl font-semibold">
+                  {activeWalk ? (isPaused ? "Pausado" : "Em andamento") : "Pronto para iniciar"}
+                </p>
+                {activeWalk && (
+                  <p className="text-xs text-muted-foreground">
+                    Iniciado em{" "}
+                    {new Date(activeWalk.start_time).toLocaleString("pt-BR", {
+                      day: "2-digit",
+                      month: "short",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </p>
+                )}
+              </div>
+              <div className="text-right">
+                <div className="flex items-center justify-end gap-2">
+                  <Timer className="h-4 w-4 text-blue-500" />
+                  <span className="text-3xl font-mono">{formatDuration(activeElapsedSeconds)}</span>
+                </div>
+                <p className="text-xs text-muted-foreground">Tempo decorrido</p>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              {activeWalk ? (
+                <>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handlePauseResume}
+                    disabled={processingAction !== null && processingAction !== (isPaused ? "resume" : "pause")}
+                  >
+                    {isPaused ? <PlayCircle className="mr-1 h-4 w-4" /> : <PauseCircle className="mr-1 h-4 w-4" />}
+                    {processingAction === (isPaused ? "resume" : "pause")
+                      ? isPaused
+                        ? "Retomando..."
+                        : "Pausando..."
+                      : isPaused
+                        ? "Retomar"
+                        : "Pausar"}
+                  </Button>
+                  <Button size="sm" onClick={() => setIsFinishModalOpen(true)} disabled={processingAction !== null}>
+                    <StopCircle className="mr-1 h-4 w-4" />
+                    Finalizar passeio
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleCancelWalk}
+                    disabled={processingAction !== null}
+                    className="text-muted-foreground hover:text-destructive"
+                  >
+                    Cancelar
+                  </Button>
+                </>
+              ) : (
+                <Button onClick={handleStartWalk} disabled={processingAction === "start"}>
+                  <PlayCircle className="mr-1 h-4 w-4" />
+                  {processingAction === "start" ? "Iniciando..." : "Iniciar passeio"}
+                </Button>
+              )}
+            </div>
+
+            {activeWalk && missingFields.length > 0 && (
+              <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-xs text-amber-700">
+                Preencha: {missingFields.join(", ")} antes de finalizar.
+              </div>
+            )}
+
+            {!activeWalk && latestCompletedWalk && (
+              <div className="rounded-md border border-dashed border-muted-foreground/40 p-3 text-sm text-muted-foreground">
+                Último passeio finalizado em{" "}
+                {new Date(latestCompletedWalk.end_time ?? latestCompletedWalk.start_time).toLocaleString("pt-BR", {
+                  day: "2-digit",
+                  month: "long",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
+                . Energia:{" "}
+                {latestCompletedWalk.energy_level
+                  ? WALK_ENERGY_LABEL_MAP[latestCompletedWalk.energy_level as WalkEnergyLevel]
+                  : "não informada"}
+                . Tempo total:{" "}
+                {formatDuration(
+                  latestCompletedWalk.duration_seconds ??
+                    computeElapsedSeconds(
+                      latestCompletedWalk,
+                      latestCompletedWalk.end_time ? new Date(latestCompletedWalk.end_time).getTime() : undefined
+                    )
+                )}
+                .
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {activeWalk && walkForm && (
+          <>
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Energia e comportamento</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <p className="mb-2 text-sm font-medium">Nível de energia</p>
+                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
+                    {WALK_ENERGY_OPTIONS.map((option) => (
+                      <Button
+                        key={option.value}
+                        variant={walkForm.energy_level === option.value ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setFormField("energy_level", option.value)}
+                        className="text-xs"
+                      >
+                        {option.label}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <p className="mb-2 text-sm font-medium">Comportamento</p>
+                  <div className="flex flex-wrap gap-2">
+                    {WALK_BEHAVIOR_OPTIONS.map((option) => (
+                      <Button
+                        key={option.value}
+                        variant={walkForm.behavior.includes(option.value) ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => handleToggleBehavior(option.value)}
+                        className="text-xs"
+                      >
+                        {option.label}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div>
+                    <p className="mb-2 text-sm font-medium">Percurso</p>
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant={walkForm.completed_route ? "default" : "outline"}
+                        onClick={() => setFormField("completed_route", true)}
+                        className="flex-1 text-xs"
+                      >
+                        <CheckCircle2 className="mr-1 h-3 w-3" />
+                        Completou
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant={!walkForm.completed_route ? "default" : "outline"}
+                        onClick={() => setFormField("completed_route", false)}
+                        className="flex-1 text-xs"
+                      >
+                        <TrendingDown className="mr-1 h-3 w-3" />
+                        Parou antes
+                      </Button>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-sm font-medium">Distância estimada (km)</label>
+                    <input
+                      type="number"
+                      inputMode="decimal"
+                      step="0.1"
+                      min="0"
+                      value={walkForm.route_distance_km}
+                      onChange={(event) => setFormField("route_distance_km", event.target.value)}
+                      className="w-full rounded-md border px-3 py-2 text-sm"
+                      placeholder="Ex: 1.8"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="mb-1 block text-sm font-medium">Descrição da rota</label>
+                  <textarea
+                    value={walkForm.route_description}
+                    onChange={(event) => setFormField("route_description", event.target.value)}
+                    rows={2}
+                    className="w-full rounded-md border px-3 py-2 text-sm"
+                    placeholder="Anote mudanças no percurso ou locais importantes..."
+                  />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Necessidades fisiológicas</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <p className="mb-2 text-sm font-medium">Registro de xixi</p>
+                  <div className="flex flex-wrap gap-2">
+                    {WALK_PEE_COUNT_OPTIONS.map((option) => (
+                      <Button
+                        key={option.value}
+                        variant={walkForm.pee_count === option.value ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setFormField("pee_count", option.value)}
+                        className="text-xs"
+                      >
+                        {option.label}
+                      </Button>
+                    ))}
+                  </div>
+
+                  <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                    <div>
+                      <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                        Volume
+                      </label>
+                      <div className="flex flex-wrap gap-2">
+                        {WALK_PEE_VOLUME_OPTIONS.map((option) => (
+                          <Button
+                            key={option.value}
+                            variant={walkForm.pee_volume === option.value ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => setFormField("pee_volume", option.value)}
+                            className="text-xs"
+                          >
+                            {option.label}
+                          </Button>
+                        ))}
+                      </div>
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                        Cor
+                      </label>
+                      <div className="flex flex-wrap gap-2">
+                        {WALK_PEE_COLOR_OPTIONS.map((option) => (
+                          <Button
+                            key={option.value}
+                            variant={walkForm.pee_color === option.value ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => setFormField("pee_color", option.value)}
+                            className="text-xs"
+                          >
+                            {option.label}
+                          </Button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <p className="mb-2 text-sm font-medium">Registro de cocô</p>
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant={walkForm.poop_made ? "default" : "outline"}
+                      onClick={() => setFormField("poop_made", true)}
+                      className="flex-1 text-xs"
+                    >
+                      Fez
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant={!walkForm.poop_made ? "default" : "outline"}
+                      onClick={() => setFormField("poop_made", false)}
+                      className="flex-1 text-xs"
+                    >
+                      Não fez
+                    </Button>
+                  </div>
+
+                  {walkForm.poop_made && (
+                    <div className="mt-3 space-y-3">
+                      <div className="flex flex-wrap gap-2">
+                        {WALK_POOP_CONSISTENCY_OPTIONS.map((option) => (
+                          <Button
+                            key={option.value}
+                            variant={walkForm.poop_consistency === option.value ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => setFormField("poop_consistency", option.value)}
+                            className="text-xs"
+                          >
+                            {option.label}
+                          </Button>
+                        ))}
+                      </div>
+                      <div className="grid gap-2 sm:grid-cols-2">
+                        <div className="flex items-center gap-2 rounded-md border px-3 py-2">
+                          <Checkbox
+                            id={`poop-blood-${walkForm.walkId}`}
+                            checked={walkForm.poop_blood}
+                            onCheckedChange={(checked) => setFormField("poop_blood", Boolean(checked))}
+                          />
+                          <label htmlFor={`poop-blood-${walkForm.walkId}`} className="text-xs">
+                            Sangue
+                          </label>
+                        </div>
+                        <div className="flex items-center gap-2 rounded-md border px-3 py-2">
+                          <Checkbox
+                            id={`poop-mucus-${walkForm.walkId}`}
+                            checked={walkForm.poop_mucus}
+                            onCheckedChange={(checked) => setFormField("poop_mucus", Boolean(checked))}
+                          />
+                          <label htmlFor={`poop-mucus-${walkForm.walkId}`} className="text-xs">
+                            Muco
+                          </label>
+                        </div>
+                      </div>
+                      <div>
+                        <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                          Cor incomum
+                        </label>
+                        <input
+                          type="text"
+                          value={walkForm.poop_color}
+                          onChange={(event) => setFormField("poop_color", event.target.value)}
+                          className="w-full rounded-md border px-3 py-2 text-sm"
+                          placeholder="Ex: esverdeado, muito escuro..."
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Contexto e sinais importantes</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div>
+                    <label className="mb-1 flex items-center gap-2 text-sm font-medium">
+                      <CloudSun className="h-4 w-4 text-amber-500" />
+                      Clima e temperatura
+                    </label>
+                    <div className="flex gap-2">
+                      <input
+                        type="number"
+                        inputMode="decimal"
+                        step="0.1"
+                        min="-10"
+                        value={walkForm.temperature_celsius}
+                        onChange={(event) => setFormField("temperature_celsius", event.target.value)}
+                        className="w-28 rounded-md border px-3 py-2 text-sm"
+                        placeholder="°C"
+                      />
+                      <input
+                        type="text"
+                        value={walkForm.weather}
+                        onChange={(event) => setFormField("weather", event.target.value)}
+                        className="flex-1 rounded-md border px-3 py-2 text-sm"
+                        placeholder="Ensolarado, nublado, chuvoso..."
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-sm font-medium">Mobilidade (mancar, dificuldade...)</label>
+                    <input
+                      type="text"
+                      value={walkForm.mobility_notes}
+                      onChange={(event) => setFormField("mobility_notes", event.target.value)}
+                      className="w-full rounded-md border px-3 py-2 text-sm"
+                      placeholder="Descreva sinais observados"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid gap-2 sm:grid-cols-3">
+                  <div className="flex items-center gap-2 rounded-md border px-3 py-2">
+                    <Checkbox
+                      id={`disorientation-${walkForm.walkId}`}
+                      checked={walkForm.disorientation}
+                      onCheckedChange={(checked) => setFormField("disorientation", Boolean(checked))}
+                    />
+                    <label htmlFor={`disorientation-${walkForm.walkId}`} className="text-xs">
+                      Desorientação
+                    </label>
+                  </div>
+                  <div className="flex items-center gap-2 rounded-md border px-3 py-2">
+                    <Checkbox
+                      id={`panting-${walkForm.walkId}`}
+                      checked={walkForm.excessive_panting}
+                      onCheckedChange={(checked) => setFormField("excessive_panting", Boolean(checked))}
+                    />
+                    <label htmlFor={`panting-${walkForm.walkId}`} className="text-xs">
+                      Ofegância excessiva
+                    </label>
+                  </div>
+                  <div className="flex items-center gap-2 rounded-md border px-3 py-2">
+                    <Checkbox
+                      id={`cough-${walkForm.walkId}`}
+                      checked={walkForm.cough}
+                      onCheckedChange={(checked) => setFormField("cough", Boolean(checked))}
+                    />
+                    <label htmlFor={`cough-${walkForm.walkId}`} className="text-xs">
+                      Tosse
+                    </label>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="mb-1 block text-sm font-medium">Observações gerais</label>
+                  <textarea
+                    value={walkForm.notes}
+                    onChange={(event) => setFormField("notes", event.target.value)}
+                    rows={3}
+                    className="w-full rounded-md border px-3 py-2 text-sm"
+                    placeholder="Anote qualquer detalhe relevante sobre o passeio..."
+                  />
+                </div>
+
+                <div>
+                  <label className="mb-1 flex items-center gap-2 text-sm font-medium">
+                    <Camera className="h-4 w-4 text-muted-foreground" />
+                    Fotos ou referências (URLs)
+                  </label>
+                  <textarea
+                    value={walkForm.photosText}
+                    onChange={(event) => setFormField("photosText", event.target.value)}
+                    rows={2}
+                    className="w-full rounded-md border px-3 py-2 text-sm"
+                    placeholder="Cole links de fotos ou referências para mostrar ao veterinário..."
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          </>
+        )}
+
+        {lastGeneratedAlerts.length > 0 && (
+          <Alert className="border-amber-200 bg-amber-50 text-amber-800">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertTitle>Alertas do último passeio registrado</AlertTitle>
+            <AlertDescription className="space-y-1">
+              {lastGeneratedAlerts.map((alert, index) => (
+                <p key={index}>{alert}</p>
+              ))}
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {!activeWalk && summaryAlerts.length > 0 && (
+          <Alert>
+            <AlertTriangle className="h-4 w-4 text-amber-500" />
+            <AlertTitle>Observações recentes</AlertTitle>
+            <AlertDescription className="space-y-1">
+              {summaryAlerts.map((alert, index) => (
+                <p key={index}>{alert}</p>
+              ))}
+            </AlertDescription>
+          </Alert>
+        )}
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Resumo dos últimos 7 dias</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="rounded-lg border bg-muted/40 p-3">
+                <p className="text-xs text-muted-foreground">Passeios registrados</p>
+                <p className="text-lg font-semibold">{weeklySnapshot.total}</p>
+              </div>
+              <div className="rounded-lg border bg-muted/40 p-3">
+                <p className="text-xs text-muted-foreground">Duração média</p>
+                <p className="text-lg font-semibold">
+                  {weeklySnapshot.avgDurationMinutes > 0 ? `${weeklySnapshot.avgDurationMinutes} min` : "—"}
+                </p>
+              </div>
+              <div className="rounded-lg border bg-muted/40 p-3">
+                <p className="text-xs text-muted-foreground">Energia predominante</p>
+                <p className="text-lg font-semibold">
+                  {weeklySnapshot.avgEnergyLabel ?? "—"}
+                </p>
+              </div>
+              <div className="rounded-lg border bg-muted/40 p-3">
+                <p className="text-xs text-muted-foreground">Cocô realizado</p>
+                <p className="text-lg font-semibold">{weeklySnapshot.poopRate}%</p>
+                <p className="text-xs text-muted-foreground">dos passeios</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Tendência de energia</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {energyTrendData.length >= 2 ? (
+              <div className="h-60">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={energyTrendData}>
+                    <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.2} />
+                    <XAxis dataKey="label" tickLine={false} axisLine={false} />
+                    <YAxis domain={[1, 5]} tickCount={5} tickFormatter={(value) => String(value)} />
+                    <ChartTooltip
+                      cursor={false}
+                      content={({ payload }) => {
+                        if (!payload || payload.length === 0) return null
+                        const item = payload[0].payload
+                        return (
+                          <div className="rounded-md border bg-background px-3 py-2 text-xs">
+                            <p>{item.energyText}</p>
+                            <p className="text-muted-foreground">Escala: {item.energy}/5</p>
+                          </div>
+                        )
+                      }}
+                    />
+                    <Line type="monotone" dataKey="energy" stroke="#2563eb" strokeWidth={2} dot={{ r: 2 }} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">Registre mais passeios para visualizar a tendência de energia.</p>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Últimos passeios</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {lastWalks.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Ainda não há passeios finalizados.</p>
+            ) : (
+              lastWalks.map((entry) => {
+                const entryDuration =
+                  entry.duration_seconds ??
+                  computeElapsedSeconds(entry, entry.end_time ? new Date(entry.end_time).getTime() : undefined)
+                return (
+                  <div key={entry.id} className="space-y-2 rounded-lg border p-3">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-medium">
+                        {new Date(entry.start_time).toLocaleDateString("pt-BR", { day: "2-digit", month: "long" })}
+                      </p>
+                      <Badge variant="outline">{formatDuration(entryDuration)}</Badge>
+                    </div>
+                    <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+                      {entry.energy_level && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-2 py-1 text-blue-700">
+                          <Activity className="h-3 w-3" />
+                          {WALK_ENERGY_LABEL_MAP[entry.energy_level as WalkEnergyLevel]}
+                        </span>
+                      )}
+                      <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-1 text-amber-700">
+                        <Droplets className="h-3 w-3" />
+                        {formatPeeSummary(entry)}
+                      </span>
+                      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-1 text-emerald-700">
+                        <Gauge className="h-3 w-3" />
+                        {formatPoopSummary(entry)}
+                      </span>
+                      {entry.route_distance_km !== null && entry.route_distance_km !== undefined && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-purple-100 px-2 py-1 text-purple-700">
+                          <MapPin className="h-3 w-3" />
+                          {entry.route_distance_km.toFixed(1)} km
+                        </span>
+                      )}
+                      {entry.temperature_celsius !== null && entry.temperature_celsius !== undefined && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-1 text-slate-700">
+                          <Thermometer className="h-3 w-3" />
+                          {entry.temperature_celsius.toFixed(1)}°C
+                        </span>
+                      )}
+                    </div>
+                    {entry.behavior && entry.behavior.length > 0 && (
+                      <div className="flex flex-wrap gap-2 text-xs">
+                        {entry.behavior.map((behavior) => (
+                          <Badge key={behavior} variant="secondary">
+                            {getBehaviorLabel(behavior)}
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
+                    {entry.alerts && entry.alerts.length > 0 && (
+                      <div className="rounded-md border border-amber-200 bg-amber-50 p-2 text-xs text-amber-800">
+                        {entry.alerts.map((alert, index) => (
+                          <p key={index}>{alert}</p>
+                        ))}
+                      </div>
+                    )}
+                    {entry.notes && <p className="text-xs text-muted-foreground">Notas: {entry.notes}</p>}
+                  </div>
+                )
+              })
+            )}
+          </CardContent>
+        </Card>
+
+        <Dialog open={isFinishModalOpen} onOpenChange={setIsFinishModalOpen}>
+          <DialogContent className="sm:max-w-lg">
+            <DialogHeader>
+              <DialogTitle>Finalizar passeio</DialogTitle>
+              <DialogDescription>Confirme os dados antes de salvar.</DialogDescription>
+            </DialogHeader>
+            {activeWalk && walkForm ? (
+              <div className="space-y-4 text-sm">
+                <div className="rounded-md border bg-muted/40 p-3">
+                  <p className="font-medium">Resumo rápido</p>
+                  <p className="text-muted-foreground">Duração estimada: {formatDuration(activeElapsedSeconds)}</p>
+                  <p className="text-muted-foreground">
+                    Energia:{" "}
+                    {walkForm.energy_level ? WALK_ENERGY_LABEL_MAP[walkForm.energy_level] : "não preenchido"}
+                  </p>
+                </div>
+                {missingFields.length > 0 && (
+                  <Alert className="border-amber-200 bg-amber-50 text-amber-800">
+                    <AlertTriangle className="h-4 w-4" />
+                    <AlertTitle>Campos obrigatórios pendentes</AlertTitle>
+                    <AlertDescription>
+                      {missingFields.join(", ")}
+                    </AlertDescription>
+                  </Alert>
+                )}
+                {walkForm.notes && <p className="text-muted-foreground">Notas: {walkForm.notes}</p>}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">Nenhum passeio em andamento.</p>
+            )}
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsFinishModalOpen(false)} disabled={processingAction === "finish"}>
+                Voltar
+              </Button>
+              <Button onClick={handleFinishSubmit} disabled={processingAction === "finish"}>
+                {processingAction === "finish" ? "Salvando..." : "Salvar registro"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
+    )
+  }
+
   const HumorPage = () => {
     const { addMoodEntry } = usePetData()
     const [energia, setEnergia] = useState<"alta" | "media" | "baixa" | undefined>()
@@ -956,12 +2302,15 @@ export default function FredCareApp() {
   }
 
   const HistoricoPage = () => {
-    const [filter, setFilter] = useState<"all" | "glicemia" | "humor" | "rotina">("all")
+    const [filter, setFilter] = useState<"all" | "glicemia" | "humor" | "rotina" | "passeio">("all")
 
     const allEntries = [
       ...glucoseReadings.map((r) => ({ ...r, type: "glicemia", date: r.created_at })),
       ...moodEntries.map((r) => ({ ...r, type: "humor", date: r.created_at })),
       ...allRoutineItems.filter((r) => r.completed).map((r) => ({ ...r, type: "rotina", date: r.completed_at || r.date })),
+      ...walkEntries
+        .filter((r) => r.end_time)
+        .map((r) => ({ ...r, type: "passeio", date: r.end_time ?? r.start_time })),
     ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
 
     const filteredEntries = filter === "all" ? allEntries : allEntries.filter((e) => e.type === filter)
@@ -979,6 +2328,7 @@ export default function FredCareApp() {
                 { value: "glicemia", label: "Glicemia" },
                 { value: "humor", label: "Humor" },
                 { value: "rotina", label: "Rotina" },
+                { value: "passeio", label: "Passeios" },
               ].map((option) => (
                 <Button
                   key={option.value}
@@ -1026,6 +2376,41 @@ export default function FredCareApp() {
                       <div>
                         <p className="font-medium">Tarefa Concluída</p>
                         <p className="text-sm text-muted-foreground">{(entry as any).task}</p>
+                      </div>
+                    )}
+                    {entry.type === "passeio" && (
+                      <div>
+                        <p className="font-medium">Passeio registrado</p>
+                        <div className="space-y-1 text-sm text-muted-foreground">
+                          <p>
+                            Energia:{" "}
+                            {(entry as WalkEntry).energy_level
+                              ? WALK_ENERGY_LABEL_MAP[(entry as WalkEntry).energy_level as WalkEnergyLevel]
+                              : "Não informada"}
+                          </p>
+                          <p>
+                            Duração:{" "}
+                            {(entry as WalkEntry).duration_seconds
+                              ? formatDuration((entry as WalkEntry).duration_seconds ?? 0)
+                              : "—"}
+                          </p>
+                          <p>
+                            Xixi:{" "}
+                            {(entry as WalkEntry).pee_count
+                              ? WALK_PEE_COUNT_OPTIONS.find(
+                                    (option) => option.value === (entry as WalkEntry).pee_count
+                                  )?.label ?? (entry as WalkEntry).pee_count
+                              : "Não informado"}
+                          </p>
+                          <p>
+                            Cocô:{" "}
+                            {(entry as WalkEntry).poop_made
+                              ? WALK_POOP_CONSISTENCY_OPTIONS.find(
+                                    (option) => option.value === (entry as WalkEntry).poop_consistency
+                                  )?.label ?? "Fez"
+                              : "Não fez"}
+                          </p>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -1084,6 +2469,7 @@ export default function FredCareApp() {
         {currentTab === "dashboard" && renderDashboard()}
         {currentTab === "glicemia" && <GlicemiaPage />}
         {currentTab === "humor" && <HumorPage />}
+        {currentTab === "passeios" && <WalksPage />}
         {currentTab === "historico" && <HistoricoPage />}
       </main>
 
@@ -1131,6 +2517,17 @@ export default function FredCareApp() {
             <div className="flex flex-col items-center gap-1">
               <Brain className="h-4 w-4" />
               <span>Humor</span>
+            </div>
+          </button>
+          <button
+            onClick={() => setCurrentTab("passeios")}
+            className={`flex-1 py-3 px-2 text-xs font-medium transition-colors active:scale-95 ${
+              currentTab === "passeios" ? "text-blue-600 bg-blue-50" : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <div className="flex flex-col items-center gap-1">
+              <Footprints className="h-4 w-4" />
+              <span>Passeios</span>
             </div>
           </button>
           <button

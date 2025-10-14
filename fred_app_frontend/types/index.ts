@@ -43,6 +43,50 @@ export interface MoodEntry {
   created_at: string
 }
 
+export type WalkEnergyLevel = "very-low" | "low" | "moderate" | "high" | "very-high"
+export type WalkPeeCount = "none" | "1x" | "2x" | "3x-plus"
+export type WalkPeeVolume = "low" | "normal" | "high"
+export type WalkPeeColor = "normal" | "dark" | "blood"
+export type WalkPoopConsistency = "hard" | "normal" | "soft" | "diarrhea"
+export type SeniorAlertTag = "mobility" | "disorientation" | "panting" | "cough"
+
+export interface WalkPauseSegment {
+  started_at: string
+  ended_at?: string | null
+}
+
+export interface WalkEntry {
+  id: string
+  date: string
+  start_time: string
+  end_time?: string | null
+  duration_seconds?: number | null
+  pause_events?: WalkPauseSegment[] | null
+  energy_level?: WalkEnergyLevel | null
+  behavior?: string[] | null
+  completed_route?: boolean | null
+  pee_count?: WalkPeeCount | null
+  pee_volume?: WalkPeeVolume | null
+  pee_color?: WalkPeeColor | null
+  poop_made?: boolean | null
+  poop_consistency?: WalkPoopConsistency | null
+  poop_blood?: boolean | null
+  poop_mucus?: boolean | null
+  poop_color?: string | null
+  photos?: string[] | null
+  weather?: string | null
+  temperature_celsius?: number | null
+  route_distance_km?: number | null
+  route_description?: string | null
+  mobility_notes?: string | null
+  disorientation?: boolean | null
+  excessive_panting?: boolean | null
+  cough?: boolean | null
+  notes?: string | null
+  alerts?: string[] | null
+  created_at: string
+}
+
 // Legacy interfaces for backward compatibility
 export interface DailyTask {
   id: string

@@ -13,4 +13,5 @@ export const API_ENDPOINTS = {
   routine: '/routine-items',
   glucose: '/glucose-readings', 
   mood: '/mood-entries',
+  walks: '/walk-entries',
 } as const

@@ -288,3 +288,138 @@ def delete_mood_entry(db: Session, mood_entry_id: str):
         db.delete(db_mood_entry)
         db.commit()
     return db_mood_entry
+
+
+def _normalize_pause_events(pause_events):
+    if not pause_events:
+        return None
+
+    normalized = []
+    for pause in pause_events:
+        started_raw = pause.started_at if isinstance(pause, schemas.WalkPauseSegment) else pause.get("started_at")
+        ended_raw = pause.ended_at if isinstance(pause, schemas.WalkPauseSegment) else pause.get("ended_at")
+
+        if isinstance(started_raw, str):
+            started_raw = datetime.fromisoformat(started_raw.replace("Z", "+00:00"))
+        if isinstance(ended_raw, str):
+            ended_raw = datetime.fromisoformat(ended_raw.replace("Z", "+00:00"))
+
+        started_at_brt = to_brasilia(started_raw) if started_raw else None
+        ended_at_brt = to_brasilia(ended_raw) if ended_raw else None
+
+        normalized.append({
+            "started_at": started_at_brt.isoformat() if started_at_brt else None,
+            "ended_at": ended_at_brt.isoformat() if ended_at_brt else None,
+        })
+    return normalized
+
+
+# Walk Entry CRUD operations
+def get_walk_entries(
+    db: Session,
+    pet_id: str,
+    limit: int = 30,
+    sort: Optional[str] = None,
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None
+):
+    query = db.query(models.WalkEntry).filter(models.WalkEntry.pet_id == pet_id)
+
+    if start_date:
+        query = query.filter(models.WalkEntry.date >= start_date)
+    if end_date:
+        query = query.filter(models.WalkEntry.date <= end_date)
+
+    if sort == "start_time:asc":
+        query = query.order_by(models.WalkEntry.start_time.asc())
+    else:
+        query = query.order_by(desc(models.WalkEntry.start_time))
+
+    if limit:
+        query = query.limit(limit)
+
+    return query.all()
+
+
+def create_walk_entry(db: Session, walk_entry: schemas.WalkEntryCreate, pet_id: str):
+    start_time = to_brasilia(walk_entry.start_time)
+    end_time = to_brasilia(walk_entry.end_time) if walk_entry.end_time else None
+
+    # Calculate duration if not provided and we have end_time
+    duration_seconds = walk_entry.duration_seconds
+    if duration_seconds is None and end_time:
+        duration_seconds = int((end_time - start_time).total_seconds())
+
+    pause_events = _normalize_pause_events(walk_entry.pause_events)
+    entry_date = walk_entry.date or start_time.date().isoformat()
+
+    db_walk_entry = models.WalkEntry(
+        id=str(uuid.uuid4()),
+        pet_id=pet_id,
+        date=entry_date,
+        start_time=start_time,
+        end_time=end_time,
+        duration_seconds=duration_seconds,
+        pause_events=pause_events,
+        energy_level=walk_entry.energy_level,
+        behavior=walk_entry.behavior,
+        completed_route=walk_entry.completed_route if walk_entry.completed_route is not None else True,
+        pee_count=walk_entry.pee_count,
+        pee_volume=walk_entry.pee_volume,
+        pee_color=walk_entry.pee_color,
+        poop_made=walk_entry.poop_made if walk_entry.poop_made is not None else False,
+        poop_consistency=walk_entry.poop_consistency,
+        poop_blood=walk_entry.poop_blood,
+        poop_mucus=walk_entry.poop_mucus,
+        poop_color=walk_entry.poop_color,
+        photos=walk_entry.photos,
+        weather=walk_entry.weather,
+        temperature_celsius=walk_entry.temperature_celsius,
+        route_distance_km=walk_entry.route_distance_km,
+        route_description=walk_entry.route_description,
+        mobility_notes=walk_entry.mobility_notes,
+        disorientation=walk_entry.disorientation,
+        excessive_panting=walk_entry.excessive_panting,
+        cough=walk_entry.cough,
+        notes=walk_entry.notes,
+        alerts=walk_entry.alerts,
+    )
+    db.add(db_walk_entry)
+    db.commit()
+    db.refresh(db_walk_entry)
+    return db_walk_entry
+
+
+def update_walk_entry(db: Session, walk_entry_id: str, updates: schemas.WalkEntryUpdate):
+    db_walk_entry = db.query(models.WalkEntry).filter(models.WalkEntry.id == walk_entry_id).first()
+
+    if not db_walk_entry:
+        return None
+
+    update_data = updates.model_dump(exclude_unset=True)
+
+    if "pause_events" in update_data:
+        update_data["pause_events"] = _normalize_pause_events(update_data["pause_events"])
+
+    if "end_time" in update_data:
+        end_time = update_data["end_time"]
+        update_data["end_time"] = to_brasilia(end_time) if end_time else None
+
+    for field, value in update_data.items():
+        setattr(db_walk_entry, field, value)
+
+    # Automatically recompute duration if end_time updated and duration not explicitly provided
+    if "end_time" in update_data and "duration_seconds" not in update_data and db_walk_entry.end_time:
+        db_walk_entry.duration_seconds = int((db_walk_entry.end_time - db_walk_entry.start_time).total_seconds())
+
+    db.commit()
+    db.refresh(db_walk_entry)
+    return db_walk_entry
+
+
+def delete_walk_entry(db: Session, walk_entry_id: str):
+    db_walk_entry = db.query(models.WalkEntry).filter(models.WalkEntry.id == walk_entry_id).first()
+    if db_walk_entry:
+        db.delete(db_walk_entry)
+        db.commit()
+    return db_walk_entry

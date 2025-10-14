@@ -20,6 +20,7 @@ class Pet(Base):
     routine_items = relationship("RoutineItem", back_populates="pet")
     glucose_readings = relationship("GlucoseReading", back_populates="pet")
     mood_entries = relationship("MoodEntry", back_populates="pet")
+    walk_entries = relationship("WalkEntry", back_populates="pet")
 
 
 class RoutineTemplate(Base):
@@ -87,3 +88,41 @@ class MoodEntry(Base):
 
     # Relationship
     pet = relationship("Pet", back_populates="mood_entries")
+
+
+class WalkEntry(Base):
+    __tablename__ = "walk_entries"
+
+    id = Column(String, primary_key=True, index=True)
+    pet_id = Column(String, ForeignKey("pets.id"), nullable=False)
+    date = Column(String, nullable=False)  # YYYY-MM-DD
+    start_time = Column(DateTime(timezone=True), nullable=False)
+    end_time = Column(DateTime(timezone=True), nullable=True)
+    duration_seconds = Column(Integer, nullable=True)
+    pause_events = Column(JSON, nullable=True)
+    energy_level = Column(String, nullable=True)  # very-low, low, moderate, high, very-high
+    behavior = Column(JSON, nullable=True)  # list of behaviors observed
+    completed_route = Column(Boolean, default=True)
+    pee_count = Column(String, nullable=True)  # none, 1x, 2x, 3x-plus
+    pee_volume = Column(String, nullable=True)  # low, normal, high
+    pee_color = Column(String, nullable=True)  # normal, dark, blood
+    poop_made = Column(Boolean, default=False)
+    poop_consistency = Column(String, nullable=True)  # hard, normal, soft, diarrhea
+    poop_blood = Column(Boolean, nullable=True)
+    poop_mucus = Column(Boolean, nullable=True)
+    poop_color = Column(String, nullable=True)
+    photos = Column(JSON, nullable=True)  # list of photo URLs/base64 refs
+    weather = Column(String, nullable=True)
+    temperature_celsius = Column(Float, nullable=True)
+    route_distance_km = Column(Float, nullable=True)
+    route_description = Column(String, nullable=True)
+    mobility_notes = Column(Text, nullable=True)
+    disorientation = Column(Boolean, nullable=True)
+    excessive_panting = Column(Boolean, nullable=True)
+    cough = Column(Boolean, nullable=True)
+    notes = Column(Text, nullable=True)
+    alerts = Column(JSON, nullable=True)  # precomputed alert tags
+    created_at = Column(DateTime(timezone=True), default=now_brasilia)
+
+    # Relationship
+    pet = relationship("Pet", back_populates="walk_entries")

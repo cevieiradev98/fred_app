@@ -6,7 +6,8 @@ import { routineTemplateService, RoutineTemplate, CreateRoutineTemplateData, Upd
 import { glucoseService, UpdateGlucoseReadingData } from "@/lib/api/glucose-service"
 import { moodService, CreateMoodEntryData } from "@/lib/api/mood-service"
 import { petService, CreatePetData } from "@/lib/api/pet-service"
-import { RoutineItem, GlucoseReading, MoodEntry, Pet } from "@/types"
+import { walkService, CreateWalkEntryData, UpdateWalkEntryData } from "@/lib/api/walk-service"
+import { RoutineItem, GlucoseReading, MoodEntry, Pet, WalkEntry } from "@/types"
 
 // Default pet ID for compatibility - will be managed by context later
 const DEFAULT_PET_ID = "default-pet"
@@ -19,6 +20,7 @@ export function usePetData() {
   const [allRoutineItems, setAllRoutineItems] = useState<RoutineItem[]>([])
   const [glucoseReadings, setGlucoseReadings] = useState<GlucoseReading[]>([])
   const [moodEntries, setMoodEntries] = useState<MoodEntry[]>([])
+  const [walkEntries, setWalkEntries] = useState<WalkEntry[]>([])
   const [isLoading, setIsLoading] = useState(true)
 
   // Load data on mount
@@ -79,7 +81,8 @@ export function usePetData() {
         loadRoutineItems(),
         loadAllRoutineItems(),
         loadGlucoseReadings(),
-        loadMoodEntries()
+        loadMoodEntries(),
+        loadWalkEntries()
       ])
     } catch (error) {
       console.error("Error loading pet data:", error)
@@ -145,6 +148,16 @@ export function usePetData() {
       setMoodEntries(data)
     } catch (error) {
       console.error("Error loading mood entries:", error)
+    }
+  }
+
+  const loadWalkEntries = async () => {
+    if (!currentPetId) return
+    try {
+      const data = await walkService.getWalkEntries(currentPetId, { limit: 60 })
+      setWalkEntries(data)
+    } catch (error) {
+      console.error("Error loading walk entries:", error)
     }
   }
 
@@ -289,6 +302,39 @@ export function usePetData() {
     }
   }
 
+  const createWalkEntry = async (entry: CreateWalkEntryData): Promise<WalkEntry | undefined> => {
+    if (!currentPetId) return undefined
+    try {
+      const created = await walkService.createWalkEntry(currentPetId, entry)
+      await loadWalkEntries()
+      return created
+    } catch (error) {
+      console.error("Error creating walk entry:", error)
+      throw error
+    }
+  }
+
+  const updateWalkEntry = async (id: string, updates: UpdateWalkEntryData): Promise<WalkEntry> => {
+    try {
+      const updated = await walkService.updateWalkEntry(id, updates)
+      await loadWalkEntries()
+      return updated
+    } catch (error) {
+      console.error("Error updating walk entry:", error)
+      throw error
+    }
+  }
+
+  const deleteWalkEntry = async (id: string) => {
+    try {
+      await walkService.deleteWalkEntry(id)
+      await loadWalkEntries()
+    } catch (error) {
+      console.error("Error deleting walk entry:", error)
+      throw error
+    }
+  }
+
   const currentPet = pets.find(pet => pet.id === currentPetId)
 
   return {
@@ -305,6 +351,7 @@ export function usePetData() {
     allRoutineItems,
     glucoseReadings,
     moodEntries,
+    walkEntries,
     isLoading,
     
     // Actions
@@ -314,6 +361,9 @@ export function usePetData() {
     addGlucoseReading,
     updateGlucoseReading,
     addMoodEntry,
+    createWalkEntry,
+    updateWalkEntry,
+    deleteWalkEntry,
     
     // Template actions
     addRoutineTemplate,
